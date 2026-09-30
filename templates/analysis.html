@@ -1,0 +1,2015 @@
+{% extends "base.html" %}
+
+{% block title %}{{ analysis.name }} - Analysis Results{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
+                            </li>
+                            <li class="breadcrumb-item active">Analysis Results</li>
+                        </ol>
+                    </nav>
+                    
+                    <h1 class="h2 mb-1">{{ analysis.name }}</h1>
+                    
+                    {% if analysis.description %}
+                        <p class="text-muted mb-2">{{ analysis.description }}</p>
+                    {% endif %}
+                    
+                    <div class="d-flex gap-3 align-items-center">
+                        <span class="badge bg-{{ 'success' if analysis.status == 'completed' else 'warning' if analysis.status == 'analyzing' else 'danger' }}">
+                            {% if analysis.status == 'completed' %}
+                                <i class="fas fa-check me-1"></i>Completed
+                            {% elif analysis.status == 'analyzing' %}
+                                <i class="fas fa-spinner fa-spin me-1"></i>Analyzing
+                            {% elif analysis.status == 'failed' %}
+                                <i class="fas fa-times me-1"></i>Failed
+                            {% else %}
+                                {{ analysis.status|title }}
+                            {% endif %}
+                        </span>
+                        
+                        <small class="text-muted">
+                            {% if analysis.source_type == 'github' %}
+                                <i class="fab fa-github me-1"></i>GitHub Import
+                            {% else %}
+                                <i class="fas fa-upload me-1"></i>File Upload
+                            {% endif %}
+                        </small>
+                        
+                        <small class="text-muted">
+                            <i class="fas fa-clock me-1"></i>
+                            {{ analysis.created_at.strftime('%Y-%m-%d %H:%M') }}
+                        </small>
+                    </div>
+                </div>
+                
+                <div class="d-flex gap-2 flex-wrap">
+                    {% if analysis.status == 'completed' and analysis.analysis_results %}
+                    <a href="{{ url_for('main.download_summary', analysis_id=analysis.id) }}" class="btn btn-primary">
+                        <i class="fas fa-file-word me-2"></i>Export Summary
+                    </a>
+                    <a href="{{ url_for('main.view_graph', analysis_id=analysis.id) }}" class="btn btn-outline-info">
+                        <i class="fas fa-project-diagram me-2"></i>Relationship Graph
+                    </a>
+                    {% endif %}
+
+                    {% if analysis.user_id == current_user.id and current_user.has_team_access() %}
+                    <form method="POST" action="{{ url_for('main.toggle_sharing', analysis_id=analysis.id) }}" class="d-inline">
+                        {% if analysis.is_shared %}
+                        <button type="submit" class="btn btn-success" title="Visible to your team — click to make private">
+                            <i class="fas fa-users me-2"></i>Shared
+                        </button>
+                        {% else %}
+                        <button type="submit" class="btn btn-outline-secondary" title="Click to share with your team">
+                            <i class="fas fa-lock me-2"></i>Private
+                        </button>
+                        {% endif %}
+                    </form>
+                    {% endif %}
+
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                    {% if analysis.user_id == current_user.id or current_user.is_admin() %}
+                    <form method="POST" action="{{ url_for('main.delete_analysis', analysis_id=analysis.id) }}" 
+                          onsubmit="return confirm('Are you sure you want to delete this analysis? This action cannot be undone.');" 
+                          class="d-inline">
+                        <button type="submit" class="btn btn-outline-danger">
+                            <i class="fas fa-trash me-2"></i>Delete
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if analysis.status == 'completed' and analysis.analysis_results %}
+        <!-- Tab Navigation -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <ul class="nav nav-tabs nav-fill" id="analysisTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link {% if not active_tab %}active{% endif %}" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab" aria-controls="overview" aria-selected="{% if not active_tab %}true{% else %}false{% endif %}">
+                            <i class="fas fa-chart-pie me-2"></i>Overview
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="code-explorer-tab" data-bs-toggle="tab" data-bs-target="#code-explorer" type="button" role="tab" aria-controls="code-explorer" aria-selected="false">
+                            <i class="fas fa-search me-2"></i>Code Explorer
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="ai-understanding-tab" data-bs-toggle="tab" data-bs-target="#ai-understanding" type="button" role="tab" aria-controls="ai-understanding" aria-selected="false">
+                            <i class="fas fa-robot me-2"></i>AI-Enhanced Code Understanding
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="code-smells-tab" data-bs-toggle="tab" data-bs-target="#code-smells" type="button" role="tab" aria-controls="code-smells" aria-selected="false">
+                            <i class="fas fa-bug me-2"></i>Code Smells Analysis
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link {% if active_tab == 'change-advisor' %}active{% endif %}" id="change-advisor-tab" data-bs-toggle="tab" data-bs-target="#change-advisor" type="button" role="tab" aria-controls="change-advisor" aria-selected="false">
+                            <i class="fas fa-magic me-2"></i>Change Advisor
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="tab-content" id="analysisTabsContent">
+            <!-- Tab 1: Overview -->
+            <div class="tab-pane fade {% if not active_tab %}show active{% endif %}" id="overview" role="tabpanel" aria-labelledby="overview-tab">
+                {% if analysis.analysis_results.get('_summary') %}
+            <!-- Project Health Score -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm bg-gradient-primary text-white">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <h4 class="mb-1">{{ analysis.name }}</h4>
+                                    <p class="mb-2 opacity-75">
+                                        {{ analysis.analysis_results._summary.total_files or 0 }} files • 
+                                        {{ analysis.analysis_results._summary.languages|length or 0 }} languages • 
+                                        {{ analysis.source_type|title }} source
+                                    </p>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        {% for lang in analysis.analysis_results._summary.languages %}
+                                            <span class="badge bg-light text-dark">{{ lang|title }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <div class="col-md-4 text-center">
+                                    <div class="position-relative d-inline-block">
+                                        <svg width="80" height="80" class="mb-2">
+                                            <circle cx="40" cy="40" r="35" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="8"/>
+                                            <circle cx="40" cy="40" r="35" fill="none" stroke="white" stroke-width="8" 
+                                                    stroke-dasharray="{{ health.score * 2.2 }}, 220" 
+                                                    stroke-linecap="round" transform="rotate(-90 40 40)"/>
+                                        </svg>
+                                        <div class="position-absolute top-50 start-50 translate-middle text-center">
+                                            <h5 class="mb-0">{{ health.score }}%</h5>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">Code Health</h6>
+                                        <small class="opacity-75">{{ health.label }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Technical & Business Metrics -->
+            <div class="row mb-4">
+                <!-- Technical Metrics -->
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-dark border-bottom">
+                            <h6 class="mb-0 text-light">
+                                <i class="fas fa-code me-2 text-primary"></i>Technical Metrics
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <div class="bg-primary bg-opacity-25 border border-primary border-opacity-50 p-3 rounded text-center">
+                                        <h4 class="text-primary mb-1">{{ analysis.analysis_results._summary.total_functions or 0 }}</h4>
+                                        <small class="text-light">Functions</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="bg-success bg-opacity-25 border border-success border-opacity-50 p-3 rounded text-center">
+                                        <h4 class="text-success mb-1">{{ analysis.analysis_results._summary.total_classes or 0 }}</h4>
+                                        <small class="text-light">Classes</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="bg-warning bg-opacity-25 border border-warning border-opacity-50 p-3 rounded text-center">
+                                        <h4 class="text-warning mb-1">{{ analysis.analysis_results._summary.total_imports or 0 }}</h4>
+                                        <small class="text-light">Dependencies</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="bg-info bg-opacity-25 border border-info border-opacity-50 p-3 rounded text-center">
+                                        <h4 class="text-info mb-1">{{ analysis.analysis_results._summary.total_apis or 0 }}</h4>
+                                        <small class="text-light">API Endpoints</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Business Impact -->
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-dark border-bottom">
+                            <h6 class="mb-0 text-light">
+                                <i class="fas fa-chart-line me-2 text-success"></i>Business Impact
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            {% set maintainability = health.maintainability %}
+                            {% set scalability = health.scalability %}
+                            {% set testability = health.testability %}
+                            
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <small class="fw-medium">Maintainability</small>
+                                    <small class="text-muted">{{ maintainability }}%</small>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar bg-success" style="width: {{ maintainability }}%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <small class="fw-medium">Scalability</small>
+                                    <small class="text-muted">{{ scalability }}%</small>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar bg-primary" style="width: {{ scalability }}%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <small class="fw-medium">Testability</small>
+                                    <small class="text-muted">{{ testability }}%</small>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar bg-warning" style="width: {{ testability }}%"></div>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 p-2 bg-dark bg-opacity-50 border rounded">
+                                <small class="text-muted">
+                                    <i class="fas fa-lightbulb me-1"></i>
+                                    {% if maintainability > 80 %}
+                                        Well-structured codebase with good maintainability practices.
+                                    {% else %}
+                                        Consider refactoring complex functions to improve maintainability.
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+                {% endif %}
+            </div>
+            <!-- End Tab 1: Overview -->
+
+            <!-- Tab 2: Code Explorer -->
+            <div class="tab-pane fade" id="code-explorer" role="tabpanel" aria-labelledby="code-explorer-tab">
+        <!-- Code Explorer -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-dark border-bottom">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <h6 class="mb-0 text-light">
+                                    <i class="fas fa-search me-2 text-primary"></i>Code Explorer
+                                </h6>
+                            </div>
+                            <div class="col-auto">
+                                <div class="input-group input-group-sm" style="width: 300px;">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-filter"></i>
+                                    </span>
+                                    <input type="text" class="form-control" id="fileFilter" placeholder="Filter files, functions, classes...">
+                                    <select class="form-select" id="languageFilter" style="max-width: 120px;">
+                                        <option value="">All Languages</option>
+                                        {% set languages = [] %}
+                                        {% for code_file in analysis.code_files %}
+                                            {% if code_file.language and code_file.language not in languages %}
+                                                {% set _ = languages.append(code_file.language) %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {% for lang in languages|sort %}
+                                            <option value="{{ lang }}">{{ lang|title }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="row g-0">
+                            <!-- File Browser Panel -->
+                            <div class="col-md-4 border-end">
+                                <div class="p-3">
+                                    <h6 class="text-muted mb-3">Files ({{ analysis.code_files|length or 0 }})</h6>
+                                    <div id="fileList" class="list-group list-group-flush">
+                                        {% for code_file in analysis.code_files %}
+                                                <a href="#" class="list-group-item list-group-item-action file-item" data-filename="{{ code_file.filename }}" data-language="{{ code_file.language or 'unknown' }}">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <div class="fw-medium">{{ code_file.filename }}</div>
+                                                            <small class="text-muted">
+                                                                <span class="badge bg-secondary me-1">{{ code_file.language or 'unknown' }}</span>
+                                                                {% if code_file.functions %}{{ code_file.functions|length }} functions{% endif %}
+                                                                {% if code_file.classes %} • {{ code_file.classes|length }} classes{% endif %}
+                                                            </small>
+                                                        </div>
+                                                        <div>
+                                                            {% set file_qs = health.file_scores.get(code_file.filename) if health.file_scores else None %}
+                                                            {% if file_qs is not none %}
+                                                                {% set quality_score = file_qs %}
+                                                            {% else %}
+                                                                {% set quality_score = health.score %}
+                                                            {% endif %}
+                                                            <span class="badge bg-{{ 'success' if quality_score >= 70 else 'warning' if quality_score >= 50 else 'danger' }}">
+                                                                {{ quality_score }}%
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </a>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Code Insights Panel -->
+                            <div class="col-md-8">
+                                <div class="p-3">
+                                    <div id="fileDetails" class="text-center text-muted py-5">
+                                        <i class="fas fa-file-code fa-3x mb-3 opacity-50"></i>
+                                        <h6>Select a file to view detailed analysis</h6>
+                                        <p class="small mb-0">Click on any file from the list to see functions, classes, and quality metrics</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Architecture Overview -->
+        <div class="row mb-4">
+            <!-- Dependencies Graph -->
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-dark border-bottom">
+                        <h6 class="mb-0 text-light">
+                            <i class="fas fa-project-diagram me-2 text-info"></i>Dependencies Overview
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        {% set unique_imports = [] %}
+                        {% for code_file in analysis.code_files %}
+                            {% if code_file.imports %}
+                                {% for import_item in code_file.imports %}
+                                    {% if import_item.module and import_item.module not in unique_imports %}
+                                        {% set _ = unique_imports.append(import_item.module) %}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                        {% endfor %}
+                        {% if unique_imports|length > 0 %}
+                            <div class="row g-2">
+                                {% for import_name in unique_imports[:12] %}
+                                    <div class="col-auto">
+                                        <span class="badge bg-secondary text-light border">{{ import_name }}</span>
+                                    </div>
+                                {% endfor %}
+                                {% if unique_imports|length > 12 %}
+                                    <div class="col-auto">
+                                        <span class="badge bg-secondary">+{{ unique_imports|length - 12 }} more</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="mt-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Total dependencies: {{ unique_imports|length }}
+                                </small>
+                            </div>
+                        {% else %}
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-unlink fa-2x mb-2 opacity-50"></i>
+                                <p class="mb-0">No external dependencies detected</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quality Hotspots -->
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-dark border-bottom">
+                        <h6 class="mb-0 text-light">
+                            <i class="fas fa-exclamation-triangle me-2 text-warning"></i>Quality Hotspots
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        {% set complex_files = [] %}
+                        {% for code_file in analysis.code_files %}
+                            {% set complexity = ((code_file.functions or [])|length) + ((code_file.classes or [])|length) * 2 %}
+                            {% if complexity > 5 %}
+                                {% set _ = complex_files.append({'name': code_file.filename, 'complexity': complexity, 'functions': (code_file.functions or [])|length, 'classes': (code_file.classes or [])|length}) %}
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if complex_files %}
+                            {% for file in complex_files[:5] %}
+                                <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-dark bg-opacity-50 border rounded">
+                                    <div>
+                                        <div class="fw-medium">{{ file.name }}</div>
+                                        <small class="text-muted">{{ file.functions }} functions, {{ file.classes }} classes</small>
+                                    </div>
+                                    <span class="badge bg-{{ 'danger' if file.complexity > 15 else 'warning' }}">
+                                        {{ 'High' if file.complexity > 15 else 'Medium' }} Complexity
+                                    </span>
+                                </div>
+                            {% endfor %}
+                            <div class="mt-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-lightbulb me-1"></i>
+                                    Consider breaking down large files for better maintainability
+                                </small>
+                            </div>
+                        {% else %}
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-check-circle fa-2x mb-2 text-success opacity-50"></i>
+                                <p class="mb-0">No complexity issues detected</p>
+                                <small>Well-structured codebase</small>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+            </div>
+            <!-- End Tab 2: Code Explorer -->
+
+            <!-- Tab 3: AI-Enhanced Code Understanding -->
+            <div class="tab-pane fade" id="ai-understanding" role="tabpanel" aria-labelledby="ai-understanding-tab">
+        <!-- AI File Analysis Section -->
+        {% if analysis.ai_insights %}
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-dark border-bottom">
+                            <h5 class="mb-0 text-light">
+                                <i class="fas fa-robot me-2 text-primary"></i>AI-Enhanced Code Understanding
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if analysis.ai_insights.status == 'error' %}
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    {{ analysis.ai_insights.message or 'AI analysis encountered an error. Standard code analysis results are available below.' }}
+                                </div>
+                            {% elif analysis.ai_insights.status == 'success' and analysis.ai_insights.file_analyses %}
+                                <div class="mb-3">
+                                    <div class="row text-center">
+                                        <div class="col-md-4">
+                                            <div class="bg-primary bg-opacity-25 border border-primary border-opacity-50 p-3 rounded">
+                                                <h4 class="text-primary mb-1">{{ analysis.ai_insights.total_files or 0 }}</h4>
+                                                <small class="text-light">Files Analyzed</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="bg-success bg-opacity-25 border border-success border-opacity-50 p-3 rounded">
+                                                <h4 class="text-success mb-1">{{ analysis.ai_insights.successful_analyses or 0 }}</h4>
+                                                <small class="text-light">Successful</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="bg-info bg-opacity-25 border border-info border-opacity-50 p-3 rounded">
+                                                <h4 class="text-info mb-1">{{ "%.0f"|format((analysis.ai_insights.successful_analyses or 0) / (analysis.ai_insights.total_files or 1) * 100) }}%</h4>
+                                                <small class="text-light">Success Rate</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Individual File Analyses -->
+                                <div class="accordion" id="aiFileAccordion">
+                                    {% for filename, file_analysis in analysis.ai_insights.file_analyses.items() %}
+                                        <div class="accordion-item">
+                                            <h2 class="accordion-header" id="ai-heading-{{ loop.index }}">
+                                                <button class="accordion-button {% if not loop.first %}collapsed{% endif %}" 
+                                                        type="button" data-bs-toggle="collapse" 
+                                                        data-bs-target="#ai-collapse-{{ loop.index }}">
+                                                    <div class="d-flex align-items-center w-100">
+                                                        <div class="me-3">
+                                                            <i class="fas fa-brain text-primary"></i>
+                                                        </div>
+                                                        <div class="flex-grow-1">
+                                                            <strong>{{ filename }}</strong>
+                                                            <div class="small text-muted">
+                                                                {% if file_analysis.analysis.status == 'success' %}
+                                                                    {{ file_analysis.language|title }} • Quality Score: {{ file_analysis.analysis.analysis.code_quality_score or 'N/A' }}
+                                                                {% else %}
+                                                                    Analysis failed
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                        <div class="me-3">
+                                                            {% if file_analysis.analysis.status == 'success' %}
+                                                                <span class="badge bg-success">Success</span>
+                                                            {% else %}
+                                                                <span class="badge bg-warning">Error</span>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                </button>
+                                            </h2>
+                                            <div id="ai-collapse-{{ loop.index }}" 
+                                                 class="accordion-collapse collapse {% if loop.first %}show{% endif %}" 
+                                                 data-bs-parent="#aiFileAccordion">
+                                                <div class="accordion-body">
+                                                    {% if file_analysis.analysis.status == 'success' %}
+                                                        {% set ai_result = file_analysis.analysis.analysis %}
+                                                        
+                                                        <!-- What it Does -->
+                                                        <div class="mb-4">
+                                                            <h6 class="text-primary">
+                                                                <i class="fas fa-info-circle me-2"></i>What This Code Does
+                                                            </h6>
+                                                            <p class="text-light">{{ ai_result.what_it_does or 'No description available' }}</p>
+                                                        </div>
+                                                        
+                                                        <!-- Key Observations -->
+                                                        {% if ai_result.observations %}
+                                                            <div class="mb-4">
+                                                                <h6 class="text-info">
+                                                                    <i class="fas fa-eye me-2"></i>Key Observations
+                                                                </h6>
+                                                                <ul class="list-unstyled">
+                                                                    {% for observation in ai_result.observations %}
+                                                                        <li class="mb-2">
+                                                                            <i class="fas fa-chevron-right me-2 text-muted"></i>
+                                                                            <span class="text-light">{{ observation }}</span>
+                                                                        </li>
+                                                                    {% endfor %}
+                                                                </ul>
+                                                            </div>
+                                                        {% endif %}
+                                                        
+                                                        <!-- Recommendations -->
+                                                        {% if ai_result.recommendations %}
+                                                            <div class="mb-4">
+                                                                <h6 class="text-warning">
+                                                                    <i class="fas fa-lightbulb me-2"></i>Improvement Recommendations
+                                                                </h6>
+                                                                <ul class="list-unstyled">
+                                                                    {% for recommendation in ai_result.recommendations %}
+                                                                        <li class="mb-2">
+                                                                            <i class="fas fa-arrow-right me-2 text-warning"></i>
+                                                                            <span class="text-light">{{ recommendation }}</span>
+                                                                        </li>
+                                                                    {% endfor %}
+                                                                </ul>
+                                                            </div>
+                                                        {% endif %}
+                                                        
+                                                        <!-- Additional Metrics -->
+                                                        <div class="row mt-3">
+                                                            <div class="col-md-4">
+                                                                <div class="bg-dark bg-opacity-50 border p-3 rounded text-center">
+                                                                    <h6 class="text-secondary mb-1">{{ ai_result.complexity_level or 'Unknown' }}</h6>
+                                                                    <small class="text-muted">Complexity</small>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <div class="bg-dark bg-opacity-50 border p-3 rounded text-center">
+                                                                    <h6 class="text-primary mb-1">{{ ai_result.code_quality_score or 0 }}</h6>
+                                                                    <small class="text-muted">Quality Score</small>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <div class="bg-dark bg-opacity-50 border p-3 rounded text-center">
+                                                                    <h6 class="text-info mb-1">{{ (ai_result.main_functions|length) if ai_result.main_functions else 0 }}</h6>
+                                                                    <small class="text-muted">Functions</small>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        {% if ai_result.performance_notes %}
+                                                            <div class="mt-3 p-2 bg-dark bg-opacity-50 border rounded">
+                                                                <small class="text-muted">
+                                                                    <i class="fas fa-tachometer-alt me-1"></i>
+                                                                    <strong>Performance Notes:</strong> {{ ai_result.performance_notes }}
+                                                                </small>
+                                                            </div>
+                                                        {% endif %}
+                                                    {% else %}
+                                                        <div class="alert alert-warning">
+                                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                                            AI analysis failed for this file: {{ file_analysis.analysis.error or 'Unknown error' }}
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    No AI analysis results available. {{ analysis.ai_insights.message or 'Standard code analysis results are shown below.' }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+            </div>
+            <!-- End Tab 3: AI-Enhanced Code Understanding -->
+
+            <!-- Tab 4: Code Smells Analysis -->
+            <div class="tab-pane fade" id="code-smells" role="tabpanel" aria-labelledby="code-smells-tab">
+        <!-- Code Smells Summary Section -->
+        {% if analysis.ai_insights and analysis.ai_insights.status == 'success' and analysis.ai_insights.file_analyses %}
+            {% set all_code_smells = [] %}
+            {% for filename, file_analysis in analysis.ai_insights.file_analyses.items() %}
+                {% if file_analysis.analysis.status == 'success' and file_analysis.analysis.analysis.code_smells %}
+                    {% for smell in file_analysis.analysis.analysis.code_smells %}
+                        {% set _ = all_code_smells.append({'file': filename, 'smell': smell}) %}
+                    {% endfor %}
+                {% endif %}
+            {% endfor %}
+            
+            {% if all_code_smells|length > 0 %}
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-dark border-bottom">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0 text-light">
+                                        <i class="fas fa-bug me-2 text-danger"></i>Code Smells Analysis
+                                    </h5>
+                                    <span class="badge bg-danger">{{ all_code_smells|length }} Total</span>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <!-- Summary Statistics -->
+                                <div class="row mb-4">
+                                    {% set high_count = all_code_smells|selectattr('smell.severity', 'equalto', 'High')|list|length %}
+                                    {% set medium_count = all_code_smells|selectattr('smell.severity', 'equalto', 'Medium')|list|length %}
+                                    {% set low_count = all_code_smells|selectattr('smell.severity', 'equalto', 'Low')|list|length %}
+                                    
+                                    <div class="col-md-4">
+                                        <div class="bg-danger bg-opacity-25 border border-danger border-opacity-50 p-3 rounded text-center">
+                                            <h4 class="text-danger mb-1">{{ high_count }}</h4>
+                                            <small class="text-light">High Severity</small>
+                                            <div class="small text-muted mt-1">Critical improvements needed</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="bg-warning bg-opacity-25 border border-warning border-opacity-50 p-3 rounded text-center">
+                                            <h4 class="text-warning mb-1">{{ medium_count }}</h4>
+                                            <small class="text-light">Medium Severity</small>
+                                            <div class="small text-muted mt-1">Recommended improvements</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="bg-info bg-opacity-25 border border-info border-opacity-50 p-3 rounded text-center">
+                                            <h4 class="text-info mb-1">{{ low_count }}</h4>
+                                            <small class="text-light">Low Severity</small>
+                                            <div class="small text-muted mt-1">Nice to have improvements</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Filter Controls -->
+                                <div class="mb-3">
+                                    <div class="d-flex flex-wrap gap-3 align-items-center mb-2">
+                                        <span class="text-muted" style="font-size:0.85rem;"><i class="fas fa-filter me-1"></i>Priority:</span>
+                                        <div class="btn-group btn-group-sm" role="group" id="severityFilter">
+                                            <input type="radio" class="btn-check" name="severity" id="severity-all" value="all" checked>
+                                            <label class="btn btn-outline-secondary" for="severity-all">All ({{ all_code_smells|length }})</label>
+                                            
+                                            <input type="radio" class="btn-check" name="severity" id="severity-high" value="high">
+                                            <label class="btn btn-outline-danger" for="severity-high">High ({{ high_count }})</label>
+                                            
+                                            <input type="radio" class="btn-check" name="severity" id="severity-medium" value="medium">
+                                            <label class="btn btn-outline-warning" for="severity-medium">Medium ({{ medium_count }})</label>
+                                            
+                                            <input type="radio" class="btn-check" name="severity" id="severity-low" value="low">
+                                            <label class="btn btn-outline-info" for="severity-low">Low ({{ low_count }})</label>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-3 align-items-center">
+                                        <span class="text-muted" style="font-size:0.85rem;"><i class="fas fa-search me-1"></i>Smell:</span>
+                                        <select class="form-select form-select-sm" id="smellNameFilter" style="width:auto;min-width:220px;">
+                                            <option value="all">All Smells</option>
+                                        </select>
+                                        <span class="text-muted" id="smellVisibleCount" style="font-size:0.8rem;">{{ all_code_smells|length }} shown</span>
+                                    </div>
+                                </div>
+
+                                <!-- Code Smells List -->
+                                <div id="codeSmellsList">
+                                    {% for item in all_code_smells %}
+                                        <div class="code-smell-card mb-3 p-3 bg-dark bg-opacity-50 border rounded" data-severity="{{ item.smell.severity|lower }}" data-smell-name="{{ item.smell.smell|lower }}">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <div class="flex-grow-1">
+                                                    <h6 class="mb-1">
+                                                        <span class="badge bg-{{ 'danger' if item.smell.severity == 'High' else 'warning' if item.smell.severity == 'Medium' else 'info' }} me-2">
+                                                            {{ item.smell.severity }}
+                                                        </span>
+                                                        {{ item.smell.smell }}
+                                                    </h6>
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-file-code me-1"></i>{{ item.file }}
+                                                        {% if item.smell.line %}
+                                                            <i class="fas fa-map-marker-alt ms-2 me-1"></i>Line {{ item.smell.line }}
+                                                        {% endif %}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                            <p class="text-light mb-2">{{ item.smell.description }}</p>
+                                            {% if item.smell.impact %}
+                                                <div class="alert alert-dark border-start border-warning border-3 mb-2 py-2">
+                                                    <small class="text-light">
+                                                        <strong><i class="fas fa-bolt me-1"></i>Impact:</strong> {{ item.smell.impact }}
+                                                    </small>
+                                                </div>
+                                            {% endif %}
+                                            {% if item.smell.remediation %}
+                                                <div class="alert alert-dark border-start border-success border-3 mb-0 py-2">
+                                                    <small class="text-light">
+                                                        <strong><i class="fas fa-wrench me-1"></i>Remediation:</strong> {{ item.smell.remediation }}
+                                                    </small>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% endif %}
+            </div>
+            <!-- End Tab 4: Code Smells Analysis -->
+
+            <!-- Tab 5: Change Advisor -->
+            <div class="tab-pane fade {% if active_tab == 'change-advisor' %}show active{% endif %}" id="change-advisor" role="tabpanel" aria-labelledby="change-advisor-tab">
+
+                <!-- Request Form -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-dark border-bottom">
+                                <h6 class="mb-0 text-light">
+                                    <i class="fas fa-pencil-alt me-2 text-primary"></i>Describe Your Change
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <form method="POST" action="{{ url_for('main.submit_change_advisor', analysis_id=analysis.id) }}" id="changeAdvisorForm">
+                                    <div class="mb-3">
+                                        <textarea
+                                            name="description"
+                                            id="changeDescription"
+                                            class="form-control bg-dark text-light border-secondary"
+                                            rows="4"
+                                            placeholder="e.g. Add rate limiting to the API endpoints, Extract the authentication logic into a dedicated service, Migrate the database from SQLite to PostgreSQL..."
+                                            required
+                                            style="resize: vertical;"
+                                        ></textarea>
+                                    </div>
+
+                                    <!-- Example prompts -->
+                                    <div class="mb-3">
+                                        <small class="text-muted d-block mb-2">
+                                            <i class="fas fa-lightbulb me-1"></i>Example prompts — click to use:
+                                        </small>
+                                        <div class="d-flex flex-wrap gap-2" id="exampleChips">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary example-chip">Add user authentication</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary example-chip">Add rate limiting to the API</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary example-chip">Improve error handling throughout the application</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary example-chip">Extract business logic into a service layer</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary example-chip">Add logging and monitoring</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary example-chip">Migrate to a microservices architecture</button>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex align-items-center gap-3">
+                                        <button type="submit" class="btn btn-warning text-dark fw-semibold" id="changeAdvisorSubmit">
+                                            <i class="fas fa-magic me-2"></i>Generate Change Plan
+                                        </button>
+                                        <div id="changeAdvisorLoader" class="d-none align-items-center gap-2 text-muted">
+                                            <div class="spinner-border spinner-border-sm text-warning" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                            <small>Analysing your codebase and generating a plan... this may take up to 30 seconds.</small>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active result (when viewing a specific change request) -->
+                {% if active_change_request %}
+                    <div class="row mb-4" id="changeAdvisorResult">
+                        <div class="col-12">
+                            {% if active_change_request.status == 'failed' %}
+                                <div class="alert alert-danger d-flex align-items-start gap-3">
+                                    <i class="fas fa-times-circle fa-lg mt-1"></i>
+                                    <div>
+                                        <strong>Change plan could not be generated.</strong><br>
+                                        <small>{{ active_change_request.result.get('error', 'An unexpected error occurred. Please try again.') }}</small>
+                                    </div>
+                                </div>
+                            {% elif active_change_request.status == 'completed' and active_change_request.result %}
+                                {% set plan = active_change_request.result %}
+                                {% set complexity = plan.get('complexity', 'Medium') %}
+                                {% set risk_level = plan.get('risk_level', 'Medium') %}
+                                {% set complexity_color = 'success' if complexity == 'Low' else 'warning' if complexity == 'Medium' else 'danger' %}
+                                {% set risk_color = 'success' if risk_level == 'Low' else 'warning' if risk_level == 'Medium' else 'danger' %}
+
+                                <!-- Summary bar -->
+                                <div class="card border-0 shadow-sm mb-4">
+                                    <div class="card-body">
+                                        <div class="row align-items-center g-3">
+                                            <div class="col-md-8">
+                                                <p class="text-light mb-1">
+                                                    <i class="fas fa-quote-left text-warning me-2 opacity-50"></i>
+                                                    <em class="text-white-50">{{ active_change_request.description }}</em>
+                                                </p>
+                                                <p class="text-light mb-0">{{ plan.get('summary', '') }}</p>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="d-flex flex-wrap gap-2 justify-content-md-end">
+                                                    <span class="badge bg-{{ complexity_color }} fs-6 px-3 py-2">
+                                                        <i class="fas fa-layer-group me-1"></i>{{ complexity }} Complexity
+                                                    </span>
+                                                    {% if plan.get('estimated_hours') is not none %}
+                                                    <span class="badge bg-info fs-6 px-3 py-2">
+                                                        <i class="fas fa-clock me-1"></i>~{{ plan.get('estimated_hours') }}h estimated
+                                                    </span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Business Risk Assessment — prominent callout -->
+                                {% if plan.get('business_risk_assessment') %}
+                                <div class="card mb-4 border-{{ risk_color }} shadow-sm">
+                                    <div class="card-header bg-{{ risk_color }} bg-opacity-25 border-bottom border-{{ risk_color }}">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0 text-light">
+                                                <i class="fas fa-shield-alt me-2 text-{{ risk_color }}"></i>Business Risk Assessment
+                                            </h6>
+                                            <span class="badge bg-{{ risk_color }} fs-6 px-3 py-2">
+                                                <i class="fas fa-exclamation-triangle me-1"></i>{{ risk_level }} Risk
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="text-light mb-0" style="line-height: 1.7; font-size: 1rem;">
+                                            {{ plan.get('business_risk_assessment') }}
+                                        </p>
+                                        {% if plan.get('risks') %}
+                                        <hr class="border-secondary mt-3 mb-3">
+                                        <h6 class="text-muted mb-3">
+                                            <i class="fas fa-list-ul me-2"></i>Key Business Risks
+                                        </h6>
+                                        <ul class="list-unstyled mb-0">
+                                            {% for risk in plan.get('risks', []) %}
+                                            <li class="d-flex align-items-start gap-2 mb-2">
+                                                <i class="fas fa-circle text-{{ risk_color }} mt-1" style="font-size: 0.5rem;"></i>
+                                                <span class="text-light">{{ risk }}</span>
+                                            </li>
+                                            {% endfor %}
+                                        </ul>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                <!-- Implementation steps + affected files side by side -->
+                                <div class="row mb-4">
+                                    <div class="col-md-6">
+                                        <div class="card border-0 shadow-sm h-100">
+                                            <div class="card-header bg-dark border-bottom">
+                                                <h6 class="mb-0 text-light">
+                                                    <i class="fas fa-list-ol me-2 text-primary"></i>Implementation Steps
+                                                </h6>
+                                            </div>
+                                            <div class="card-body">
+                                                {% if plan.get('implementation_steps') %}
+                                                <ol class="ps-3 mb-0">
+                                                    {% for step in plan.get('implementation_steps', []) %}
+                                                    <li class="text-light mb-2" style="line-height: 1.6;">{{ step }}</li>
+                                                    {% endfor %}
+                                                </ol>
+                                                {% else %}
+                                                <p class="text-muted mb-0">No steps generated.</p>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card border-0 shadow-sm h-100">
+                                            <div class="card-header bg-dark border-bottom">
+                                                <h6 class="mb-0 text-light">
+                                                    <i class="fas fa-file-code me-2 text-warning"></i>Files to Change
+                                                </h6>
+                                            </div>
+                                            <div class="card-body p-0">
+                                                {% if plan.get('affected_files') %}
+                                                <div class="list-group list-group-flush">
+                                                    {% for item in plan.get('affected_files', []) %}
+                                                    <div class="list-group-item bg-transparent border-secondary">
+                                                        <div class="d-flex align-items-start gap-2">
+                                                            <i class="fas fa-edit text-warning mt-1 flex-shrink-0"></i>
+                                                            <div>
+                                                                <div class="fw-medium text-light font-monospace small">{{ item.get('filename', '') }}</div>
+                                                                <small class="text-muted">{{ item.get('change_description', '') }}</small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+                                                {% else %}
+                                                <div class="p-3 text-muted">No specific files identified.</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- New files + dependencies -->
+                                {% if plan.get('new_files') or plan.get('dependencies') %}
+                                <div class="row mb-4">
+                                    {% if plan.get('new_files') %}
+                                    <div class="col-md-6">
+                                        <div class="card border-0 shadow-sm h-100">
+                                            <div class="card-header bg-dark border-bottom">
+                                                <h6 class="mb-0 text-light">
+                                                    <i class="fas fa-file-plus me-2 text-success"></i>New Files to Create
+                                                </h6>
+                                            </div>
+                                            <div class="card-body p-0">
+                                                <div class="list-group list-group-flush">
+                                                    {% for nf in plan.get('new_files', []) %}
+                                                    <div class="list-group-item bg-transparent border-secondary">
+                                                        <div class="d-flex align-items-start gap-2">
+                                                            <i class="fas fa-plus-circle text-success mt-1 flex-shrink-0"></i>
+                                                            <div>
+                                                                <div class="fw-medium text-light font-monospace small">{{ nf.get('filename', '') }}</div>
+                                                                <small class="text-muted">{{ nf.get('purpose', '') }}</small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    {% if plan.get('dependencies') %}
+                                    <div class="col-md-{% if plan.get('new_files') %}6{% else %}12{% endif %}">
+                                        <div class="card border-0 shadow-sm h-100">
+                                            <div class="card-header bg-dark border-bottom">
+                                                <h6 class="mb-0 text-light">
+                                                    <i class="fas fa-cube me-2 text-info"></i>Dependency Changes
+                                                </h6>
+                                            </div>
+                                            <div class="card-body p-0">
+                                                <div class="list-group list-group-flush">
+                                                    {% for dep in plan.get('dependencies', []) %}
+                                                    {% set dep_color = 'success' if dep.get('action') == 'add' else 'danger' if dep.get('action') == 'remove' else 'warning' %}
+                                                    <div class="list-group-item bg-transparent border-secondary">
+                                                        <div class="d-flex align-items-start gap-2">
+                                                            <span class="badge bg-{{ dep_color }} flex-shrink-0 mt-1" style="font-size: 0.65rem;">{{ dep.get('action', 'add')|upper }}</span>
+                                                            <div>
+                                                                <div class="fw-medium text-light font-monospace small">{{ dep.get('package', '') }}</div>
+                                                                <small class="text-muted">{{ dep.get('reason', '') }}</small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Previous change requests history -->
+                {% if change_requests %}
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-dark border-bottom" id="changeHistoryHeading">
+                                <button class="btn btn-link text-light text-decoration-none p-0 d-flex align-items-center gap-2 w-100"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#changeHistoryBody"
+                                        aria-expanded="{% if not active_change_request %}true{% else %}false{% endif %}"
+                                        aria-controls="changeHistoryBody">
+                                    <i class="fas fa-history text-secondary"></i>
+                                    <h6 class="mb-0">Previous Change Plans ({{ change_requests|length }})</h6>
+                                    <i class="fas fa-chevron-down ms-auto text-muted"></i>
+                                </button>
+                            </div>
+                            <div id="changeHistoryBody" class="collapse {% if not active_change_request %}show{% endif %}">
+                                <div class="list-group list-group-flush">
+                                    {% for cr in change_requests %}
+                                    <a href="{{ url_for('main.view_change_request', analysis_id=analysis.id, request_id=cr.id) }}"
+                                       class="list-group-item list-group-item-action bg-transparent {% if active_change_request and active_change_request.id == cr.id %}border-start border-warning border-3{% endif %}">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1 me-3">
+                                                <p class="mb-1 text-light">{{ cr.description }}</p>
+                                                <small class="text-muted">
+                                                    <i class="fas fa-clock me-1"></i>{{ cr.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                                </small>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                                                {% if cr.status == 'completed' and cr.result %}
+                                                    {% set cr_complexity = cr.result.get('complexity', 'Medium') %}
+                                                    {% set cr_risk = cr.result.get('risk_level', 'Medium') %}
+                                                    <span class="badge bg-{{ 'success' if cr_complexity == 'Low' else 'warning' if cr_complexity == 'Medium' else 'danger' }}">
+                                                        {{ cr_complexity }}
+                                                    </span>
+                                                    <span class="badge bg-{{ 'success' if cr_risk == 'Low' else 'warning' if cr_risk == 'Medium' else 'danger' }} bg-opacity-75">
+                                                        Risk: {{ cr_risk }}
+                                                    </span>
+                                                    {% if cr.result.get('estimated_hours') is not none %}<span class="badge bg-secondary">~{{ cr.result.get('estimated_hours') }}h</span>{% endif %}
+                                                {% elif cr.status == 'failed' %}
+                                                    <span class="badge bg-danger">Failed</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ cr.status|title }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </a>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+            </div>
+            <!-- End Tab 5: Change Advisor -->
+
+        </div>
+        <!-- End Tab Content -->
+
+        <!-- Interactive Diagrams (hidden from UI) -->
+        {% if false and analysis.diagram_data %}
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-project-diagram me-2"></i>Code Structure Diagrams
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Diagram Tabs -->
+                            <ul class="nav nav-tabs mb-3" id="diagramTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="mindmap-tab" data-bs-toggle="tab" 
+                                            data-bs-target="#mindmap" type="button" role="tab">
+                                        <i class="fas fa-brain me-2"></i>Code Map
+                                    </button>
+                                </li>
+                                {% if analysis.diagram_data.flowchart %}
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="flowchart-tab" data-bs-toggle="tab" 
+                                                data-bs-target="#flowchart" type="button" role="tab">
+                                            <i class="fas fa-sitemap me-2"></i>Flowchart
+                                        </button>
+                                    </li>
+                                {% endif %}
+
+                                {% if analysis.status == 'completed' %}
+                                <li class="nav-item ms-auto" role="presentation">
+                                    <a href="{{ url_for('main.view_graph', analysis_id=analysis.id) }}"
+                                       class="btn btn-sm btn-outline-info d-flex align-items-center gap-1"
+                                       style="margin-top:2px;">
+                                        <i class="fas fa-project-diagram"></i>
+                                        <span>Relationship Graph</span>
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                            </ul>
+                            
+                            <!-- Diagram Content -->
+                            <div class="tab-content" id="diagramTabsContent">
+                                <!-- Mind Map Tab -->
+                                <div class="tab-pane fade show active" id="mindmap" role="tabpanel">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <div>
+                                            <h6 class="mb-1">Interactive Code Map</h6>
+                                            <small class="text-muted">Explore relationships between modules, classes, functions, and APIs</small>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" id="regenerate-mindmap">
+                                                <i class="fas fa-refresh me-1"></i>Regenerate
+                                            </button>
+                                            <!-- <button type="button" class="btn btn-sm btn-outline-warning" id="stop-animation">
+                                                <i class="fas fa-pause me-1"></i>Stop Animation
+                                            </button> -->
+                                            <div class="btn-group" role="group">
+                                                <button type="button" class="btn btn-sm btn-outline-primary" id="filter-all">All</button>
+                                                <button type="button" class="btn btn-sm btn-outline-primary" id="filter-files">Files</button>
+                                                <button type="button" class="btn btn-sm btn-outline-primary" id="filter-classes">Classes</button>
+                                                <button type="button" class="btn btn-sm btn-outline-primary" id="filter-functions">Functions</button>
+                                                <button type="button" class="btn btn-sm btn-outline-primary" id="filter-apis">APIs</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mindmap-container bg-dark rounded p-3" style="min-height: 600px; background-color: #2d3748 !important;">
+                                        <div id="mindmap-visualization" class="w-100 h-100">
+                                            <div class="d-flex justify-content-center align-items-center h-100">
+                                                <div class="text-center">
+                                                    <div class="spinner-border text-primary" role="status">
+                                                        <span class="visually-hidden">Loading code map...</span>
+                                                    </div>
+                                                    <p class="mt-2 text-muted">Loading code map visualization...</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row mt-3">
+                                        <div class="col-md-12">
+                                            <div class="card">
+                                                <div class="card-body">
+                                                    <h6 class="card-title">Legend</h6>
+                                                    <div class="d-flex flex-wrap gap-3">
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="legend-color" style="background-color: #6f42c1; width: 15px; height: 15px; border-radius: 50%; margin-right: 8px;"></div>
+                                                            <small>Project</small>
+                                                        </div>
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="legend-color" style="background-color: #0d6efd; width: 15px; height: 15px; border-radius: 50%; margin-right: 8px;"></div>
+                                                            <small>Files</small>
+                                                        </div>
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="legend-color" style="background-color: #198754; width: 15px; height: 15px; border-radius: 50%; margin-right: 8px;"></div>
+                                                            <small>Classes</small>
+                                                        </div>
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="legend-color" style="background-color: #fd7e14; width: 15px; height: 15px; border-radius: 50%; margin-right: 8px;"></div>
+                                                            <small>Functions</small>
+                                                        </div>
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="legend-color" style="background-color: #dc3545; width: 15px; height: 15px; border-radius: 50%; margin-right: 8px;"></div>
+                                                            <small>API Endpoints</small>
+                                                        </div>
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="legend-color" style="background-color: #6c757d; width: 15px; height: 15px; border-radius: 50%; margin-right: 8px;"></div>
+                                                            <small>Modules</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {% if analysis.diagram_data.flowchart %}
+                                    <div class="tab-pane fade" id="flowchart" role="tabpanel">
+                                        <div class="diagram-container">
+                                            <div class="mermaid" id="flowchart-diagram">
+                                                {{ analysis.diagram_data.flowchart }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                                
+
+                            </div>
+                            
+                            {% if not analysis.diagram_data.flowchart %}
+                                <div class="text-center py-4">
+                                    <i class="fas fa-exclamation-circle fa-2x text-muted mb-3"></i>
+                                    <h6 class="text-muted">No diagrams available</h6>
+                                    <p class="text-muted">The codebase structure couldn't generate meaningful diagrams.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+
+    {% elif analysis.status == 'analyzing' %}
+        <!-- Analyzing State -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center py-5">
+                        <div class="spinner-border text-primary mb-3" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <h4 class="text-muted mb-3">Analysis in Progress</h4>
+                        <p class="text-muted">
+                            Your code is being analyzed. This may take a few moments depending on the size of your codebase.
+                        </p>
+                        <p class="text-muted small">
+                            This page will automatically refresh when the analysis is complete.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    {% elif analysis.status == 'failed' %}
+        <!-- Failed State -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card border-danger shadow-sm">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-times-circle text-danger fa-3x mb-3"></i>
+                        <h4 class="text-danger mb-3">Analysis Failed</h4>
+                        <p class="text-muted">
+                            The analysis could not be completed. This might be due to unsupported file formats, 
+                            parsing errors, or system issues.
+                        </p>
+                        <div class="mt-4">
+                            <a href="{{ url_for('main.upload_form') }}" class="btn btn-primary me-2">
+                                <i class="fas fa-retry me-2"></i>Try Again
+                            </a>
+                            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    {% else %}
+        <!-- Unknown State -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-question-circle text-muted fa-3x mb-3"></i>
+                        <h4 class="text-muted mb-3">Unknown Status</h4>
+                        <p class="text-muted">
+                            The analysis status is unknown: {{ analysis.status }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="{{ url_for('static', filename='js/mindmap.js') }}"></script>
+<script>
+    let mindMapInstance = null;
+    
+    // Initialize VibeDeCoder
+    console.log('Initializing VibeDeCoder...');
+    
+    const fileHealthScores = {{ health.file_scores|tojson }};
+    const analysisData = {
+        {% for code_file in analysis.code_files %}
+        "{{ code_file.filename }}": {
+            "filename": "{{ code_file.filename }}",
+            "language": "{{ code_file.language }}",
+            "functions": {{ code_file.functions|tojson if code_file.functions else []|tojson }},
+            "classes": {{ code_file.classes|tojson if code_file.classes else []|tojson }},
+            "imports": {{ code_file.imports|tojson if code_file.imports else []|tojson }},
+            "apis": {{ code_file.apis|tojson if code_file.apis else []|tojson }},
+            "quality_metrics": {{ code_file.quality_metrics|tojson if code_file.quality_metrics else {}|tojson }}
+        }{{ "," if not loop.last else "" }}
+        {% endfor %}
+    };
+    
+    // Initialize Mermaid
+    mermaid.initialize({ 
+        theme: 'dark',
+        startOnLoad: true,
+        flowchart: {
+            useMaxWidth: true,
+            htmlLabels: true
+        },
+        classDiagram: {
+            useMaxWidth: true
+        }
+    });
+    
+    // Change Advisor: example chips + loading state
+    document.addEventListener('DOMContentLoaded', function() {
+        const chips = document.querySelectorAll('.example-chip');
+        const textarea = document.getElementById('changeDescription');
+        if (chips && textarea) {
+            chips.forEach(function(chip) {
+                chip.addEventListener('click', function() {
+                    textarea.value = this.textContent.trim();
+                    textarea.focus();
+                });
+            });
+        }
+
+        const form = document.getElementById('changeAdvisorForm');
+        const submitBtn = document.getElementById('changeAdvisorSubmit');
+        const loader = document.getElementById('changeAdvisorLoader');
+        if (form && submitBtn && loader) {
+            form.addEventListener('submit', function() {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generating...';
+                loader.classList.remove('d-none');
+                loader.classList.add('d-flex');
+            });
+        }
+    });
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('VibeDeCoder initialized successfully');
+        
+        // Initialize file explorer functionality
+        initializeFileExplorer();
+        
+        {% if analysis.status == 'completed' and analysis.mindmap_data %}
+            // Load mind map data
+            loadMindMap();
+        {% endif %}
+        
+        // Handle regenerate mind map
+        const regenerateBtn = document.getElementById('regenerate-mindmap');
+        if (regenerateBtn) {
+            regenerateBtn.addEventListener('click', regenerateMindMap);
+        }
+    });
+    
+    // File Explorer Functionality
+    function initializeFileExplorer() {
+        console.log('Initializing file explorer...');
+        
+        const fileItems = document.querySelectorAll('.file-item');
+        console.log('Found file items:', fileItems.length);
+        
+        // File selection handling
+        fileItems.forEach(function(item) {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('File item clicked:', this);
+                
+                // Remove active state from all items
+                fileItems.forEach(function(fileItem) {
+                    fileItem.classList.remove('active');
+                });
+                
+                // Add active state to clicked item
+                this.classList.add('active');
+                
+                const filename = this.getAttribute('data-filename');
+                const language = this.getAttribute('data-language');
+                
+                console.log('Attempting to load details for:', filename, language);
+                
+                // Load file details
+                loadFileDetails(filename, language);
+            });
+        });
+        
+        // Filter functionality
+        const fileFilter = document.getElementById('fileFilter');
+        if (fileFilter) {
+            fileFilter.addEventListener('input', filterFiles);
+        }
+        
+        const languageFilter = document.getElementById('languageFilter');
+        if (languageFilter) {
+            languageFilter.addEventListener('change', filterFiles);
+        }
+    }
+    
+    function loadFileDetails(filename, language) {
+        console.log('Loading file details for:', filename, 'Language:', language);
+        console.log('Available analysis data keys:', Object.keys(analysisData));
+        
+        const fileData = analysisData[filename];
+        if (!fileData) {
+            console.log('No data found for file:', filename);
+            const fileDetailsEl = document.getElementById('fileDetails');
+            if (fileDetailsEl) {
+                fileDetailsEl.innerHTML = `
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-exclamation-triangle fa-2x mb-2 opacity-50"></i>
+                        <p class="mb-0">No analysis data found for ${filename}</p>
+                    </div>
+                `;
+            }
+            return;
+        }
+        
+        console.log('File data found:', fileData);
+        
+        let detailsHtml = `
+            <div class="border-bottom pb-3 mb-3">
+                <h5 class="mb-1">${filename}</h5>
+                <div class="d-flex gap-2 align-items-center">
+                    <span class="badge bg-secondary">${language}</span>
+                    <small class="text-muted">
+                        ${(fileData.functions || []).length} functions • 
+                        ${(fileData.classes || []).length} classes • 
+                        ${(fileData.imports || []).length} imports
+                    </small>
+                </div>
+            </div>
+        `;
+        
+        // Performance Metrics
+        const complexity = (fileData.functions || []).length + (fileData.classes || []).length * 2;
+        const qualityScore = (fileHealthScores[filename] !== null && fileHealthScores[filename] !== undefined) ? fileHealthScores[filename] : (complexity < 10 ? 85 : complexity < 20 ? 70 : 50);
+        
+        detailsHtml += `
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card bg-dark bg-opacity-50 border">
+                        <div class="card-body text-center">
+                            <h4 class="text-${qualityScore > 80 ? 'success' : qualityScore > 60 ? 'warning' : 'danger'} mb-1">
+                                ${qualityScore}%
+                            </h4>
+                            <small class="text-light">Quality Score</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card bg-dark bg-opacity-50 border">
+                        <div class="card-body text-center">
+                            <h4 class="text-info mb-1">${complexity}</h4>
+                            <small class="text-light">Complexity</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Tabs for different content types
+        const hasContent = (fileData.functions && fileData.functions.length > 0) ||
+                         (fileData.classes && fileData.classes.length > 0) ||
+                         (fileData.imports && fileData.imports.length > 0) ||
+                         (fileData.apis && fileData.apis.length > 0);
+        
+        if (hasContent) {
+            detailsHtml += `
+                <ul class="nav nav-tabs" id="fileDetailTabs">
+                    ${fileData.functions && fileData.functions.length > 0 ? 
+                        '<li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#functions-tab">Functions (' + fileData.functions.length + ')</a></li>' : ''}
+                    ${fileData.classes && fileData.classes.length > 0 ? 
+                        '<li class="nav-item"><a class="nav-link' + (!fileData.functions || fileData.functions.length === 0 ? ' active' : '') + '" data-bs-toggle="tab" href="#classes-tab">Classes (' + fileData.classes.length + ')</a></li>' : ''}
+                    ${fileData.imports && fileData.imports.length > 0 ? 
+                        '<li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#imports-tab">Imports (' + fileData.imports.length + ')</a></li>' : ''}
+                    ${fileData.apis && fileData.apis.length > 0 ? 
+                        '<li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#apis-tab">APIs (' + fileData.apis.length + ')</a></li>' : ''}
+                </ul>
+                
+                <div class="tab-content mt-3" id="fileDetailTabContent">
+            `;
+            
+            // Functions tab
+            if (fileData.functions && fileData.functions.length > 0) {
+                detailsHtml += `
+                    <div class="tab-pane fade show active" id="functions-tab">
+                        <div class="list-group">
+                `;
+                fileData.functions.forEach(func => {
+                    detailsHtml += `
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">${func.name}</h6>
+                                    ${func.parameters ? '<small class="text-muted">Parameters: ' + func.parameters.map(p => p.name).join(', ') + '</small>' : ''}
+                                </div>
+                                ${func.line ? '<small class="text-muted">Line ' + func.line + '</small>' : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+                detailsHtml += `</div></div>`;
+            }
+            
+            // Classes tab
+            if (fileData.classes && fileData.classes.length > 0) {
+                const isActive = !fileData.functions || fileData.functions.length === 0;
+                detailsHtml += `
+                    <div class="tab-pane fade ${isActive ? 'show active' : ''}" id="classes-tab">
+                        <div class="list-group">
+                `;
+                fileData.classes.forEach(cls => {
+                    detailsHtml += `
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">${cls.name}</h6>
+                                    ${cls.methods ? '<small class="text-muted">' + cls.methods.length + ' methods</small>' : ''}
+                                </div>
+                                ${cls.line ? '<small class="text-muted">Line ' + cls.line + '</small>' : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+                detailsHtml += `</div></div>`;
+            }
+            
+            // Imports tab
+            if (fileData.imports && fileData.imports.length > 0) {
+                detailsHtml += `
+                    <div class="tab-pane fade" id="imports-tab">
+                        <div class="row">
+                `;
+                fileData.imports.forEach(imp => {
+                    detailsHtml += `
+                        <div class="col-md-6 mb-2">
+                            <div class="card bg-dark bg-opacity-50 border">
+                                <div class="card-body py-2">
+                                    <small class="text-light"><strong>${imp.module || imp.name}</strong></small>
+                                    ${imp.line ? '<br><small class="text-muted">Line ' + imp.line + '</small>' : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                detailsHtml += `</div></div>`;
+            }
+            
+            // APIs tab
+            if (fileData.apis && fileData.apis.length > 0) {
+                detailsHtml += `
+                    <div class="tab-pane fade" id="apis-tab">
+                        <div class="list-group">
+                `;
+                fileData.apis.forEach(api => {
+                    detailsHtml += `
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-primary me-2">${api.method || 'GET'}</span>
+                                    <strong>${api.route || api.endpoint}</strong>
+                                </div>
+                                ${api.line ? '<small class="text-muted">Line ' + api.line + '</small>' : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+                detailsHtml += `</div></div>`;
+            }
+            
+            detailsHtml += `</div>`; // Close tab-content
+        } else {
+            detailsHtml += `
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-info-circle fa-2x mb-2 opacity-50"></i>
+                    <p class="mb-0">No detailed analysis available for this file</p>
+                </div>
+            `;
+        }
+        
+        const fileDetailsEl = document.getElementById('fileDetails');
+        if (fileDetailsEl) {
+            fileDetailsEl.innerHTML = detailsHtml;
+            
+            // Initialize new tabs
+            const tabLinks = fileDetailsEl.querySelectorAll('#fileDetailTabs a');
+            tabLinks.forEach(function(link) {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Remove active class from all tabs
+                    tabLinks.forEach(function(tabLink) {
+                        tabLink.classList.remove('active');
+                    });
+                    
+                    // Add active class to clicked tab
+                    this.classList.add('active');
+                    
+                    // Hide all tab panes
+                    const tabPanes = fileDetailsEl.querySelectorAll('.tab-pane');
+                    tabPanes.forEach(function(pane) {
+                        pane.classList.remove('show', 'active');
+                    });
+                    
+                    // Show selected tab pane
+                    const targetId = this.getAttribute('href').substring(1);
+                    const targetPane = document.getElementById(targetId);
+                    if (targetPane) {
+                        targetPane.classList.add('show', 'active');
+                    }
+                });
+            });
+        }
+    }
+    
+    function filterFiles() {
+        const fileFilterEl = document.getElementById('fileFilter');
+        const languageFilterEl = document.getElementById('languageFilter');
+        
+        if (!fileFilterEl || !languageFilterEl) return;
+        
+        const searchTerm = fileFilterEl.value.toLowerCase();
+        const selectedLanguage = languageFilterEl.value;
+        
+        const fileItems = document.querySelectorAll('.file-item');
+        fileItems.forEach(function(item) {
+            const filename = item.getAttribute('data-filename').toLowerCase();
+            const language = item.getAttribute('data-language');
+            const content = item.textContent.toLowerCase();
+            
+            const matchesSearch = !searchTerm || filename.includes(searchTerm) || content.includes(searchTerm);
+            const matchesLanguage = !selectedLanguage || language === selectedLanguage;
+            
+            if (matchesSearch && matchesLanguage) {
+                item.style.display = '';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+    
+    // Auto-refresh if analyzing (disabled to prevent mind map interference)
+    {% if analysis.status == 'analyzing' %}
+        // setTimeout(() => {
+        //     window.location.reload();
+        // }, 5000); // Refresh every 5 seconds - DISABLED
+    {% endif %}
+    
+    // Mind map functionality
+    async function loadMindMap() {
+        try {
+            const response = await fetch(`{{ url_for('main.mindmap_data', analysis_id=analysis.id) }}`);
+            const data = await response.json();
+            
+            if (data.error) {
+                showMindMapError(data.error);
+                return;
+            }
+            
+            // Create mind map visualization
+            mindMapInstance = new CodeMindMap('mindmap-visualization', data);
+            
+        } catch (error) {
+            console.error('Error loading mind map:', error);
+            showMindMapError('Failed to load mind map data');
+        }
+    }
+    
+    function showMindMapError(message) {
+        const container = document.getElementById('mindmap-visualization');
+        container.innerHTML = `
+            <div class="d-flex justify-content-center align-items-center h-100">
+                <div class="text-center">
+                    <i class="fas fa-exclamation-triangle text-warning fa-3x mb-3"></i>
+                    <h5 class="text-muted">Mind Map Unavailable</h5>
+                    <p class="text-muted">${message}</p>
+                    <button class="btn btn-primary" onclick="loadMindMap()">
+                        <i class="fas fa-retry me-1"></i>Retry
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Regenerate mind map
+    async function regenerateMindMap() {
+        const button = document.getElementById('regenerate-mindmap');
+        const originalContent = button.innerHTML;
+        
+        try {
+            button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Regenerating...';
+            button.disabled = true;
+            
+            const response = await fetch(`{{ url_for('main.regenerate_mindmap', analysis_id=analysis.id) }}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            const result = await response.json();
+            
+            if (result.status === 'success') {
+                // Reload the mind map with new data
+                mindMapInstance = new CodeMindMap('mindmap-visualization', result.data);
+                
+                // Show success message
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-success alert-dismissible fade show';
+                alert.innerHTML = `
+                    <i class="fas fa-check me-2"></i>Mind map regenerated successfully!
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.querySelector('.mindmap-container').insertAdjacentElement('beforebegin', alert);
+                
+                // Auto dismiss after 3 seconds
+                setTimeout(() => {
+                    alert.remove();
+                }, 3000);
+            } else {
+                showMindMapError(result.error || 'Failed to regenerate mind map');
+            }
+            
+        } catch (error) {
+            console.error('Error regenerating mind map:', error);
+            showMindMapError('Failed to regenerate mind map');
+        } finally {
+            button.innerHTML = originalContent;
+            button.disabled = false;
+        }
+    }
+    
+    // Filter functionality
+    function setupFilters() {
+        const filterButtons = document.querySelectorAll('[id^="filter-"]');
+        
+        // Only set up filters if buttons exist
+        if (filterButtons.length === 0) return;
+        
+        filterButtons.forEach(button => {
+            if (!button) return; // Skip null buttons
+            
+            button.addEventListener('click', () => {
+                // Remove active class from all buttons
+                filterButtons.forEach(btn => {
+                    if (btn && btn.classList) {
+                        btn.classList.remove('active');
+                    }
+                });
+                
+                // Add active class to clicked button
+                if (button.classList) {
+                    button.classList.add('active');
+                }
+                
+                if (!mindMapInstance) return;
+                
+                const filterType = button.id.replace('filter-', '');
+                
+                if (filterType === 'all') {
+                    mindMapInstance.resetFilter();
+                } else {
+                    const typeMap = {
+                        'files': ['file'],
+                        'classes': ['class', 'database_model', 'controller', 'service'],
+                        'functions': ['function', 'method', 'constructor', 'destructor', 'accessor'],
+                        'apis': ['api_endpoint']
+                    };
+                    
+                    const types = typeMap[filterType] || [filterType];
+                    mindMapInstance.filterByType(types);
+                }
+            });
+        });
+        
+        // Set 'All' as default active if it exists
+        const filterAllButton = document.getElementById('filter-all');
+        if (filterAllButton && filterAllButton.classList) {
+            filterAllButton.classList.add('active');
+        }
+    }
+    
+    // Handle tab switching and Mermaid rendering
+    function handleTabSwitch() {
+        const tabButtons = document.querySelectorAll('[data-bs-toggle="tab"]');
+        
+        tabButtons.forEach(button => {
+            button.addEventListener('shown.bs.tab', function (event) {
+                const targetId = event.target.getAttribute('data-bs-target');
+                
+                // Force Mermaid to re-render when switching to diagram tabs
+                if (targetId === '#flowchart') {
+                    setTimeout(() => {
+                        try {
+                            console.log('Attempting to render Mermaid diagrams in:', targetId);
+                            const diagramElements = document.querySelectorAll(targetId + ' .mermaid');
+                            console.log('Found diagram elements:', diagramElements.length);
+                            
+                            diagramElements.forEach((element, index) => {
+                                console.log('Diagram content:', element.textContent);
+                                
+                                // Get original diagram source if available
+                                const originalSource = element.getAttribute('data-diagram-source');
+                                if (originalSource) {
+                                    console.log('Restoring original diagram source');
+                                    element.textContent = originalSource;
+                                }
+                                
+                                // Clear any existing content and force re-render
+                                element.removeAttribute('data-processed');
+                                element.classList.remove('mermaid');
+                                element.classList.add('mermaid');
+                                
+                                // Force re-render
+                                mermaid.init(undefined, element);
+                            });
+                        } catch (error) {
+                            console.error('Mermaid rendering error:', error);
+                            // Fallback: try global re-render
+                            try {
+                                mermaid.contentLoaded();
+                            } catch (fallbackError) {
+                                console.error('Mermaid fallback error:', fallbackError);
+                            }
+                        }
+                    }, 200);
+                }
+            });
+        });
+    }
+    
+    // Diagram controls
+    document.addEventListener('DOMContentLoaded', function() {
+        // Setup tab switching handler
+        handleTabSwitch();
+        
+        // Load mind map when page loads
+        {% if analysis.status == 'completed' %}
+            loadMindMap();
+        {% endif %}
+        
+        // Setup filter buttons
+        setupFilters();
+        
+        // Setup regenerate button
+        const regenerateBtn = document.getElementById('regenerate-mindmap');
+        if (regenerateBtn) {
+            regenerateBtn.addEventListener('click', regenerateMindMap);
+        }
+        
+        // Setup stop animation button
+        const stopBtn = document.getElementById('stop-animation');
+        if (stopBtn) {
+            stopBtn.addEventListener('click', () => {
+                if (mindMapInstance && mindMapInstance.simulation) {
+                    mindMapInstance.simulation.stop();
+                    mindMapInstance.simulation = null;
+                    console.log('Mind map animation stopped and simulation destroyed');
+                }
+            });
+        }
+        
+        // Re-render diagrams when tabs are shown
+        const tabTriggerList = [].slice.call(document.querySelectorAll('#diagramTabs button'));
+        tabTriggerList.forEach(function (tabTrigger) {
+            tabTrigger.addEventListener('shown.bs.tab', function (event) {
+                if (event.target.id === 'mindmap-tab' && !mindMapInstance) {
+                    // Load mind map if it hasn't been loaded yet
+                    loadMindMap();
+                } else {
+                    // Re-initialize mermaid diagrams
+                    mermaid.init(undefined, '.mermaid');
+                }
+            });
+        });
+        
+        // Populate smell name dropdown from data-smell-name values and wire filters
+        (function() {
+            var smellSelect = document.getElementById('smellNameFilter');
+            var sevFilter = document.getElementById('severityFilter');
+            var countLabel = document.getElementById('smellVisibleCount');
+            var cards = document.querySelectorAll('.code-smell-card');
+
+            if (!smellSelect || !cards.length) return;
+
+            // Collect unique smell names from the DOM
+            var smellNames = [];
+            cards.forEach(function(card) {
+                var name = card.getAttribute('data-smell-name');
+                if (name && smellNames.indexOf(name) === -1) smellNames.push(name);
+            });
+            smellNames.sort();
+            smellNames.forEach(function(name) {
+                var opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name.charAt(0).toUpperCase() + name.slice(1);
+                smellSelect.appendChild(opt);
+            });
+
+            var _sev = 'all';
+            var _smell = 'all';
+
+            function applyFilters() {
+                var visible = 0;
+                cards.forEach(function(card) {
+                    var cardSev = card.getAttribute('data-severity') || '';
+                    var cardSmell = card.getAttribute('data-smell-name') || '';
+                    var matchSev = _sev === 'all' || cardSev === _sev;
+                    var matchSmell = _smell === 'all' || cardSmell === _smell;
+                    if (matchSev && matchSmell) {
+                        card.style.display = '';
+                        visible++;
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+                var smellsList = document.getElementById('codeSmellsList');
+                if (smellsList) {
+                    var noMsg = smellsList.querySelector('.no-results-message');
+                    if (visible === 0) {
+                        if (!noMsg) {
+                            noMsg = document.createElement('div');
+                            noMsg.className = 'no-results-message alert alert-info text-center';
+                            noMsg.innerHTML = '<i class="fas fa-info-circle me-2"></i>No code smells match the selected filters.';
+                            smellsList.appendChild(noMsg);
+                        }
+                    } else {
+                        if (noMsg) noMsg.remove();
+                    }
+                }
+                if (countLabel) {
+                    countLabel.textContent = visible === cards.length
+                        ? cards.length + ' shown'
+                        : visible + ' of ' + cards.length + ' shown';
+                }
+            }
+
+            // Wire severity radios
+            if (sevFilter) {
+                sevFilter.querySelectorAll('input[name="severity"]').forEach(function(input) {
+                    input.addEventListener('change', function(e) {
+                        _sev = e.target.value;
+                        applyFilters();
+                    });
+                });
+            }
+
+            // Wire smell select
+            smellSelect.addEventListener('change', function(e) {
+                _smell = e.target.value;
+                applyFilters();
+            });
+
+            // Keep count in sync on initial load
+            applyFilters();
+        })();
+
+        // Auto-show progress modal if analysis is still in progress
+        {% if analysis.status in ['analyzing', 'pending'] %}
+        console.log('Analysis status is {{ analysis.status }}, starting progress tracking...');
+        if (VibeDeCoder && VibeDeCoder.showProgressModal) {
+            // Show the progress modal
+            console.log('Showing progress modal for analysis {{ analysis.id }}');
+            VibeDeCoder.showProgressModal({{ analysis.id }});
+            
+            // Trigger the actual processing via AJAX
+            console.log('Triggering processing endpoint...');
+            fetch('/analysis/{{ analysis.id }}/process', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'same-origin'  // Include session cookie
+            })
+            .then(response => {
+                console.log('Processing response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Processing initiated successfully:', data);
+            })
+            .catch(error => {
+                console.error('Failed to start processing:', error);
+            });
+        } else {
+            console.error('VibeDeCoder.showProgressModal not available!');
+        }
+        {% endif %}
+    });
+</script>
+{% endblock %}

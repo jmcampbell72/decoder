@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}{{ brand.name }} - AI Code Analysis{% endblock %}
+
+{% block content %}
+<div class="hero-section position-relative overflow-hidden">
+    <!-- Animated Background -->
+    <div class="hero-bg position-absolute w-100 h-100"></div>
+    
+    <div class="container position-relative">
+        <div class="row align-items-center min-vh-100">
+            <div class="col-lg-6">
+                <div class="hero-content">
+                    <div class="brand-title mb-4">
+                        <h1 class="hero-title">
+                            <span class="brand-icon">
+                                <i class="fas fa-code"></i>
+                            </span>
+                            <span class="brand-text">{{ brand.name }}</span>
+                        </h1>
+                        <div class="brand-subtitle">AI Code Analysis</div>
+                    </div>
+                    
+                    <p class="hero-description mb-5">
+                        Transform complex codebases into intuitive visual insights. Our advanced static analysis 
+                        engine reverse engineers code across multiple programming languages, 
+                        creating comprehensive analytics and documentation.
+                    </p>
+                
+                    <div class="hero-actions d-flex gap-3 mb-5">
+                        {% if current_user.is_authenticated %}
+                            <a href="{{ url_for('main.upload_form') }}" class="btn btn-hero-primary btn-lg">
+                                <i class="fas fa-rocket me-2"></i>Start Analysis
+                            </a>
+                            <a href="{{ url_for('main.dashboard') }}" class="btn btn-hero-secondary btn-lg">
+                                <i class="fas fa-chart-line me-2"></i>Dashboard
+                            </a>
+                        {% else %}
+                            <a href="{{ url_for('auth.register') }}" class="btn btn-hero-primary btn-lg">
+                                <i class="fas fa-sparkles me-2"></i>Get Started Free
+                            </a>
+                            <a href="{{ url_for('auth.login') }}" class="btn btn-hero-secondary btn-lg">
+                                <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Features List -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                Multi-language analysis
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                GitHub integration
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                In memory analysis, no code stored
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                Code quality metrics
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                Security analysis
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success me-2"></i>
+                                API endpoint detection
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-6">
+                <div class="hero-visual text-center">
+                    <!-- Layered Dashboard Mockup -->
+                    <div class="dashboard-layered">
+                        <div class="dashboard-image-back">
+                            <img src="{{ url_for('static', filename=brand.dashboard_back) }}" 
+                                 alt="AI Code Understanding" 
+                                 class="img-fluid rounded shadow-lg">
+                        </div>
+                        <div class="dashboard-image-front">
+                            <img src="{{ url_for('static', filename=brand.dashboard_front) }}" 
+                                 alt="Code Analysis Dashboard" 
+                                 class="img-fluid rounded shadow-lg">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="container py-5">
+    <div class="row">
+        <div class="col-12 text-center mb-5">
+            <h2 class="fw-bold">Powerful Code Analysis Features</h2>
+            <p class="lead text-muted">Everything you need to understand and document your codebase</p>
+        </div>
+    </div>
+    
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-code fa-3x text-primary"></i>
+                    </div>
+                    <h5 class="card-title">Multi-Language Support</h5>
+                    <p class="card-text">
+                        Analyze Python, JavaScript, C/C++, C#, Go, Java, Rust, Kotlin, Swift, and more. 
+                        Advanced AST parsing for deep code understanding.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="feature-icon mb-3">
+                        <i class="fab fa-github fa-3x text-info"></i>
+                    </div>
+                    <h5 class="card-title">GitHub Integration</h5>
+                    <p class="card-text">
+                        Import repositories directly from GitHub for instant analysis. 
+                        Temporary caching with no permanent storage.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-shield-alt fa-3x text-warning"></i>
+                    </div>
+                    <h5 class="card-title">Security Analysis</h5>
+                    <p class="card-text">
+                        Detect potential security vulnerabilities, code smells, 
+                        and unsafe patterns in your codebase.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-chart-bar fa-3x text-danger"></i>
+                    </div>
+                    <h5 class="card-title">Quality Metrics</h5>
+                    <p class="card-text">
+                        Calculate cyclomatic complexity, code coverage, 
+                        and maintainability indices.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-plug fa-3x text-purple"></i>
+                    </div>
+                    <h5 class="card-title">API Detection</h5>
+                    <p class="card-text">
+                        Automatically discover REST endpoints, routes, 
+                        and API patterns in web applications.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Supported Languages -->
+<div class="container py-5">
+    <div class="row">
+        <div class="col-12 text-center mb-4">
+            <h3 class="fw-bold">Supported Languages</h3>
+        </div>
+    </div>
+    
+    <div class="row justify-content-center">
+        <div class="col-auto">
+            <div class="d-flex flex-wrap gap-3 justify-content-center">
+                <span class="badge bg-primary fs-6 py-2 px-3">Python</span>
+                <span class="badge bg-warning fs-6 py-2 px-3">JavaScript</span>
+                <span class="badge bg-info fs-6 py-2 px-3">TypeScript</span>
+                <span class="badge bg-success fs-6 py-2 px-3">C/C++</span>
+                <span class="badge bg-danger fs-6 py-2 px-3">C#</span>
+                <span class="badge bg-secondary fs-6 py-2 px-3">Go</span>
+                <span class="badge bg-dark fs-6 py-2 px-3">Java</span>
+                <span class="badge bg-purple fs-6 py-2 px-3">Rust</span>
+                <span class="badge bg-info fs-6 py-2 px-3">Kotlin</span>
+                <span class="badge bg-warning fs-6 py-2 px-3">Swift</span>
+                <span class="badge bg-primary fs-6 py-2 px-3">HTML/CSS</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Initialize Mermaid
+    mermaid.initialize({ 
+        theme: 'dark',
+        startOnLoad: true,
+        flowchart: {
+            useMaxWidth: true,
+            htmlLabels: true
+        }
+    });
+</script>
+{% endblock %}

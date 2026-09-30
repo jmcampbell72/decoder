@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}Documentation - {{ analysis.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-file-alt me-2"></i>Application Overview: {{ analysis.name }}</h2>
+                    <p class="text-muted mb-0">Generated on {{ documentation.metadata.generated_at }}</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <!-- <a href="{{ url_for('main.download_documentation', analysis_id=analysis.id, format='docx') }}" 
+                       class="btn btn-primary">
+                        <i class="fas fa-download me-1"></i>Download DOCX
+                    </a> -->
+                    <a href="{{ url_for('main.view_analysis', analysis_id=analysis.id) }}" 
+                       class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Analysis
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Documentation Navigation and Content -->
+    <div class="row">
+        <!-- Sidebar Navigation -->
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm position-sticky" style="top: 20px;">
+                <div class="card-header bg-dark border-bottom">
+                    <h6 class="mb-0 text-light">
+                        <i class="fas fa-list me-2"></i>Table of Contents
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    <nav class="nav nav-pills flex-column">
+                        {% for section_key, section_data in documentation.sections.items() %}
+                            <a class="nav-link border-0 rounded-0 text-start text-light {% if loop.first %}active{% endif %}" 
+                               href="#section-{{ section_key }}" 
+                               onclick="showSection('{{ section_key }}')">
+                                <i class="fas fa-{{ section_icons[section_key] or 'file' }} me-2"></i>
+                                {{ section_data.title }}
+                            </a>
+                        {% endfor %}
+                    </nav>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9">
+            <div id="documentation-content">
+                {% for section_key, section_data in documentation.sections.items() %}
+                    <div id="section-{{ section_key }}" class="section-content {% if not loop.first %}d-none{% endif %}">
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-header bg-dark border-bottom">
+                                <h4 class="mb-0 text-light">
+                                    <i class="fas fa-{{ section_icons[section_key] or 'file' }} me-2"></i>
+                                    {{ section_data.title }}
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                {% if section_key == 'overview' %}
+                                    {% include 'documentation_sections/overview.html' %}
+                                {% elif section_key == 'quality_metrics' %}
+                                    {% include 'documentation_sections/quality_metrics.html' %}
+                                {% elif section_key == 'key_components' %}
+                                    {% include 'documentation_sections/key_components.html' %}
+                                {% elif section_key == 'architecture' %}
+                                    {% include 'documentation_sections/architecture.html' %}
+                                {% elif section_key == 'security' %}
+                                    {% include 'documentation_sections/security.html' %}
+                                {% elif section_key == 'hardcoded_items' %}
+                                    {% include 'documentation_sections/hardcoded_items.html' %}
+                                {% elif section_key == 'file_details' %}
+                                    {% include 'documentation_sections/file_details.html' %}
+                                {% elif section_key == 'recommendations' %}
+                                    {% include 'documentation_sections/recommendations.html' %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination Controls -->
+            <!-- <div class="d-flex justify-content-between mt-4">
+                <button id="prev-section" class="btn btn-outline-secondary" onclick="navigateSection(-1)">
+                    <i class="fas fa-chevron-left me-1"></i>Previous
+                </button>
+                <div class="d-flex align-items-center">
+                    <span id="section-counter" class="text-muted">1 of {{ documentation.sections|length }}</span>
+                </div>
+                <button id="next-section" class="btn btn-outline-secondary" onclick="navigateSection(1)">
+                    Next<i class="fas fa-chevron-right ms-1"></i>
+                </button>
+            </div> -->
+        </div>
+    </div>
+</div>
+
+<script>
+let currentSectionIndex = 0;
+const sections = [
+    {% for section_key in documentation.sections.keys() %}
+        '{{ section_key }}'{% if not loop.last %},{% endif %}
+    {% endfor %}
+];
+
+function showSection(sectionKey) {
+    // Hide all sections
+    document.querySelectorAll('.section-content').forEach(section => {
+        section.classList.add('d-none');
+    });
+    
+    // Show selected section
+    document.getElementById('section-' + sectionKey).classList.remove('d-none');
+    
+    // Update navigation
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // Update section index
+    currentSectionIndex = sections.indexOf(sectionKey);
+    updateSectionCounter();
+    updateNavigationButtons();
+}
+
+function navigateSection(direction) {
+    const newIndex = currentSectionIndex + direction;
+    if (newIndex >= 0 && newIndex < sections.length) {
+        const sectionKey = sections[newIndex];
+        showSection(sectionKey);
+        
+        // Update active nav link
+        document.querySelectorAll('.nav-link').forEach((link, index) => {
+            link.classList.toggle('active', index === newIndex);
+        });
+    }
+}
+
+function updateSectionCounter() {
+    document.getElementById('section-counter').textContent = 
+        `${currentSectionIndex + 1} of ${sections.length}`;
+}
+
+function updateNavigationButtons() {
+    document.getElementById('prev-section').disabled = currentSectionIndex === 0;
+    document.getElementById('next-section').disabled = currentSectionIndex === sections.length - 1;
+}
+
+// Initialize
+updateSectionCounter();
+updateNavigationButtons();
+</script>
+{% endblock %}

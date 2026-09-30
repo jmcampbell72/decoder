@@ -1,0 +1,538 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if github_mode %}Import from GitHub{% else %}Upload Code{% endif %} - DeCoder
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
+                    </li>
+                    <li class="breadcrumb-item active">
+                        {% if github_mode %}Import from GitHub{% else %}Upload Code{% endif %}
+                    </li>
+                </ol>
+            </nav>
+            
+            <h1 class="h2 mb-1">
+                {% if github_mode %}
+                    <i class="fab fa-github me-2"></i>Import from GitHub
+                {% else %}
+                    <i class="fas fa-upload me-2"></i>Upload Code Files
+                {% endif %}
+            </h1>
+            <p class="text-muted">
+                {% if github_mode %}
+                    Import a GitHub repository for analysis. The repository will be temporarily cached for analysis.
+                {% else %}
+                    Upload individual code files or a ZIP archive of your project for static analysis and visualization.
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <!-- Upload Method Toggle -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="btn-group w-100" role="group">
+                        <a href="{{ url_for('main.upload_form') }}" 
+                           class="btn {% if not github_mode %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            <i class="fas fa-upload me-2"></i>Upload Files
+                        </a>
+                        <a href="{{ url_for('main.github_import_form') }}" 
+                           class="btn {% if github_mode %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            <i class="fab fa-github me-2"></i>GitHub Import
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Form -->
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        {% if github_mode %}
+                            <i class="fab fa-github me-2"></i>Repository Information
+                        {% else %}
+                            <i class="fas fa-file-code me-2"></i>Analysis Details
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" 
+                          {% if not github_mode %}enctype="multipart/form-data"{% endif %}
+                          id="uploadForm">
+                        
+                        <!-- Analysis Name -->
+                        <div class="mb-3">
+                            <label for="analysis_name" class="form-label">Analysis Name *</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="analysis_name" 
+                                   name="analysis_name" 
+                                   required 
+                                   placeholder="Enter a name for this analysis">
+                            <div class="form-text">A descriptive name to identify this analysis</div>
+                        </div>
+                        
+                        <!-- Analysis Description -->
+                        <div class="mb-3">
+                            <label for="analysis_description" class="form-label">Description (Optional)</label>
+                            <textarea class="form-control" 
+                                      id="analysis_description" 
+                                      name="analysis_description" 
+                                      rows="3" 
+                                      placeholder="Optional description of what this code does or any relevant notes"></textarea>
+                        </div>
+                        
+                        {% if github_mode %}
+                            <!-- GitHub Repository URL -->
+                            <div class="mb-3">
+                                <label for="repo_url" class="form-label">GitHub Repository URL *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fab fa-github"></i>
+                                    </span>
+                                    <input type="url" 
+                                           class="form-control" 
+                                           id="repo_url" 
+                                           name="repo_url" 
+                                           required 
+                                           placeholder="https://github.com/username/repository">
+                                </div>
+                                <div class="form-text">
+                                    <strong>Examples:</strong><br>
+                                    • Full repo: <code>https://github.com/username/repo</code><br>
+                                    • Specific folder: <code>https://github.com/username/repo/tree/main/subfolder</code><br>
+                                    • With .git: <code>https://github.com/username/repo.git/subfolder</code>
+                                </div>
+                            </div>
+                            
+                            <!-- GitHub Personal Access Token -->
+                            <div class="mb-4">
+                                <label for="github_token" class="form-label">
+                                    GitHub Personal Access Token (Optional)
+                                    <i class="fas fa-shield-alt text-muted ms-1" title="Not stored, used only for import"></i>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-key"></i>
+                                    </span>
+                                    <input type="password" 
+                                           class="form-control" 
+                                           id="github_token" 
+                                           name="github_token" 
+                                           placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+                                </div>
+                                <div class="form-text">
+                                    Required for private repositories. Leave empty for public repos. 
+                                    Token is used only for this import and not stored.
+                                    <a href="https://github.com/settings/tokens/new?scopes=repo&description=VibeDeCoder" 
+                                       target="_blank" 
+                                       class="text-decoration-none">
+                                        <i class="fas fa-external-link-alt me-1"></i>Create a token
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            <!-- GitHub Import Info -->
+                            <div class="alert alert-info">
+                                <h6 class="alert-heading">
+                                    <i class="fas fa-info-circle me-2"></i>GitHub Import Notes
+                                </h6>
+                                <ul class="mb-0 small text-light">
+                                    <li>Supports both public and private repositories</li>
+                                    <li>Can import specific subdirectories using /tree/branch/folder URL format</li>
+                                    <li>Private repos require a Personal Access Token with "repo" scope</li>
+                                    <li>Package directories (node_modules, venv, etc.) are automatically skipped</li>
+                                    <li>Repository data is temporarily cached in memory</li>
+                                    <li>Maximum 100 files will be analyzed</li>                                 
+                                </ul>
+                            </div>
+                        {% else %}
+                            <!-- File Upload -->
+                            <div class="mb-4">
+                                <label for="files" class="form-label">Select Code Files or a ZIP Archive *</label>
+                                <input type="file" 
+                                       class="form-control" 
+                                       id="files" 
+                                       name="files[]" 
+                                       multiple 
+                                       accept=".zip,.py,.js,.jsx,.ts,.tsx,.html,.htm,.css,.c,.cpp,.cc,.cxx,.h,.hpp,.cs,.go,.java,.php,.rb,.swift,.kt,.rs" 
+                                       required
+                                       onclick="console.log('File input clicked');">
+                                <div class="form-text">
+                                    Upload a single <strong>.zip</strong> archive (max 100 MB) or select individual code files (max 16 MB each).
+                                    Package directories (node_modules, venv, etc.) inside the ZIP are automatically skipped.
+                                    Maximum {{ max_files }} files per analysis.
+                                </div>
+                               
+                            </div>
+                            
+                            <!-- Selected Files Preview -->
+                            <div id="filePreview" class="mb-3" style="display: none;">
+                                <label class="form-label">Selected Files:</label>
+                                <div id="fileList" class="border rounded p-3 bg-light"></div>
+                            </div>
+                            
+                            <!-- Upload Guidelines -->
+                            <div class="alert alert-primary">
+                                <h6 class="alert-heading">
+                                    <i class="fas fa-info-circle me-2"></i>Supported File Types
+                                </h6>
+                                <div class="row small text-light">
+                                    <div class="col-md-6">
+                                        <ul class="mb-0">
+                                            <li><strong>Python:</strong> .py</li>
+                                            <li><strong>JavaScript:</strong> .js, .jsx, .ts, .tsx</li>
+                                            <li><strong>C/C++:</strong> .c, .cpp, .cc, .cxx, .h, .hpp</li>
+                                            <li><strong>C#:</strong> .cs</li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <ul class="mb-0">
+                                            <li><strong>Go:</strong> .go</li>
+                                            <li><strong>Java:</strong> .java</li>
+                                            <li><strong>Rust:</strong> .rs</li>
+                                            <li><strong>Kotlin:</strong> .kt</li>
+                                            <li><strong>Swift:</strong> .swift</li>
+                                            <li><strong>Web:</strong> .html, .htm, .css</li>
+                                            <li><strong>Others:</strong> .php, .rb</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Submit Button -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary me-md-2">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <i class="fas fa-{{ 'download' if github_mode else 'upload' }} me-2"></i>
+                                <span id="submitText">
+                                    {% if github_mode %}Import Repository{% else %}Upload & Analyze{% endif %}
+                                </span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <!-- Demo Files -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-success bg-opacity-10">
+                    <h6 class="mb-0 text-success">
+                        <i class="fas fa-code me-2"></i>Demo Files Available
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted mb-3">Try the decoder with sample projects:</p>
+                    
+                    <div class="d-grid gap-2">
+                        <!-- ASP.NET C# Demo -->
+                        <a href="{{ url_for('main.github_import_form') }}?repo=https://github.com/junkshon/decoder-demo/tree/main/Demo1_ASPNETCSHARP" 
+                           class="btn btn-sm btn-outline-primary text-start">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-folder-open me-2"></i>ASP.NET C#
+                                </div>
+                                <span class="badge bg-primary">C#</span>
+                            </div>
+                        </a>
+                        
+                        <!-- Go Demo -->
+                        <a href="{{ url_for('main.github_import_form') }}?repo=https://github.com/junkshon/decoder-demo/tree/main/Demo2_Go" 
+                           class="btn btn-sm btn-outline-info text-start">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-folder-open me-2"></i>Go API
+                                </div>
+                                <span class="badge bg-info">Go</span>
+                            </div>
+                        </a>
+                        
+                        <!-- Java Demo -->
+                        <a href="{{ url_for('main.github_import_form') }}?repo=https://github.com/junkshon/decoder-demo/tree/main/Demo3_Java" 
+                           class="btn btn-sm btn-outline-danger text-start">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-folder-open me-2"></i>Spring Boot
+                                </div>
+                                <span class="badge bg-danger">Java</span>
+                            </div>
+                        </a>
+                        
+                        <!-- React Demo -->
+                        <a href="{{ url_for('main.github_import_form') }}?repo=https://github.com/junkshon/decoder-demo/tree/main/Demo4_WebReact" 
+                           class="btn btn-sm btn-outline-warning text-start">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-folder-open me-2"></i>React Web
+                                </div>
+                                <span class="badge bg-warning">React</span>
+                            </div>
+                        </a>
+                        
+                        <!-- Rust Demo -->
+                        <a href="{{ url_for('main.github_import_form') }}?repo=https://github.com/junkshon/decoder-demo/tree/main/Demo5_Rust" 
+                           class="btn btn-sm btn-outline-secondary text-start">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-folder-open me-2"></i>Rust Axum
+                                </div>
+                                <span class="badge bg-secondary">Rust</span>
+                            </div>
+                        </a>
+                        
+                        <!-- Python Demo -->
+                        <a href="{{ url_for('main.github_import_form') }}?repo=https://github.com/junkshon/decoder-demo/tree/main/Demo6_Python" 
+                           class="btn btn-sm btn-outline-success text-start">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-folder-open me-2"></i>FastAPI
+                                </div>
+                                <span class="badge bg-success">Python</span>
+                            </div>
+                        </a>
+                        
+                        <!-- Node.js Demo -->
+                        <a href="{{ url_for('main.github_import_form') }}?repo=https://github.com/junkshon/decoder-demo/tree/main/Demo7_NodeJS" 
+                           class="btn btn-sm btn-outline-dark text-start">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-folder-open me-2"></i>Express.js
+                                </div>
+                                <span class="badge bg-dark">Node.js</span>
+                            </div>
+                        </a>
+                    </div>
+                    
+                    <div class="alert border mt-3 mb-0">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Click any demo to pre-fill the GitHub import form; you will need to provide an Analysis Name.
+                        </small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Process Overview -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-cogs me-2"></i>Analysis Process
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-primary"></div>
+                            <div class="timeline-content">
+                                <h6 class="small fw-bold">1. Upload/Import</h6>
+                                <p class="small text-muted mb-2">
+                                    {% if github_mode %}
+                                        The repository is imported and cached
+                                    {% else %}
+                                        Files are uploaded and validated
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-warning"></div>
+                            <div class="timeline-content">
+                                <h6 class="small fw-bold">2. Code Extraction</h6>
+                                <p class="small text-muted mb-2">
+                                    Code is parsed to extract functions, classes, and APIs
+                                </p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-info"></div>
+                            <div class="timeline-content">
+                                <h6 class="small fw-bold">3. AI Code - Analysis</h6>
+                                <p class="small text-muted mb-2">
+                                    AI models analyse code for smells, complexity, and dependencies
+                                </p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-success"></div>
+                            <div class="timeline-content">
+                                <h6 class="small fw-bold">4. AI Architect - Analyses Results</h6>
+                                <p class="small text-muted mb-0">
+                                    Architectural insights and recommendations are generated
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Limitations -->
+            <div class="card border-warning">
+                <div class="card-header bg-warning bg-opacity-10">
+                    <h6 class="mb-0 text-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Limitations
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="small mb-0 text-light">
+                        <li>Text files only (no binaries)</li>            
+                        {% if github_mode %}
+                            <li>Private repos need a Personal Access Token</li>
+                            <li>Package directories automatically excluded</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // File upload handling
+    {% if not github_mode %}
+    document.getElementById('files').addEventListener('change', function(e) {
+        const files = Array.from(e.target.files);
+        const filePreview = document.getElementById('filePreview');
+        const fileList = document.getElementById('fileList');
+        
+        if (files.length > 0) {
+            filePreview.style.display = 'block';
+            
+            // Check for file limit
+            if (files.length > 100) {
+                alert('Too many files selected. Maximum 100 files allowed.');
+                e.target.value = '';
+                filePreview.style.display = 'none';
+                return;
+            }
+            
+            // Display file list
+            const MAX_ZIP_BYTES = 100 * 1024 * 1024;
+            const MAX_FILE_BYTES = 16 * 1024 * 1024;
+            const fileItems = files.map(file => {
+                const isZip = file.name.toLowerCase().endsWith('.zip');
+                const limit = isZip ? MAX_ZIP_BYTES : MAX_FILE_BYTES;
+                const limitLabel = isZip ? '100MB' : '16MB';
+                const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+                const sizeLabel = `${sizeMB} MB`;
+
+                if (file.size > limit) {
+                    return `<div class="d-flex justify-content-between align-items-center p-2 border-bottom">
+                        <span class="text-danger">${file.name}</span>
+                        <span class="badge bg-danger">Too large — max ${limitLabel} (${sizeLabel})</span>
+                    </div>`;
+                }
+
+                const badge = isZip ? 'bg-primary' : 'bg-secondary';
+                return `<div class="d-flex justify-content-between align-items-center p-2 border-bottom">
+                    <span>${file.name}</span>
+                    <span class="badge ${badge}">${sizeLabel}</span>
+                </div>`;
+            }).join('');
+            
+            fileList.innerHTML = fileItems;
+        } else {
+            filePreview.style.display = 'none';
+        }
+    });
+    {% endif %}
+    
+    // Form submission handling
+    document.getElementById('uploadForm').addEventListener('submit', function(e) {
+        const submitBtn = document.getElementById('submitBtn');
+        const submitText = document.getElementById('submitText');
+        
+        {% if not github_mode %}
+        // Check files
+        const files = document.getElementById('files').files;
+        if (files.length === 0) {
+            e.preventDefault();
+            alert('Please select at least one file.');
+            return;
+        }
+        
+        // Check file sizes (ZIPs allowed up to 100MB, other files up to 16MB)
+        const isZipUpload = files.length === 1 && files[0].name.toLowerCase().endsWith('.zip');
+        let oversizedFiles = [];
+        for (let file of files) {
+            const limit = file.name.toLowerCase().endsWith('.zip') ? 100 * 1024 * 1024 : 16 * 1024 * 1024;
+            const limitLabel = file.name.toLowerCase().endsWith('.zip') ? '100MB' : '16MB';
+            if (file.size > limit) {
+                oversizedFiles.push(`${file.name} (max ${limitLabel})`);
+            }
+        }
+
+        if (oversizedFiles.length > 0) {
+            e.preventDefault();
+            alert(`The following files are too large:\n${oversizedFiles.join('\n')}`);
+            return;
+        }
+        {% endif %}
+        
+        {% if github_mode %}
+        // Validate GitHub URL
+        const repoUrl = document.getElementById('repo_url').value;
+        if (!repoUrl.includes('github.com')) {
+            e.preventDefault();
+            alert('Please enter a valid GitHub repository URL.');
+            return;
+        }
+        {% endif %}
+        
+        // Disable button and show loading state
+        submitBtn.disabled = true;
+        submitText.innerHTML = `
+            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+            {% if github_mode %}Importing...{% else %}Uploading...{% endif %}
+        `;
+    });
+    
+    // Auto-generate analysis name from GitHub URL
+    {% if github_mode %}
+    // Pre-fill repo URL from query parameter (for demo links)
+    const urlParams = new URLSearchParams(window.location.search);
+    const repoParam = urlParams.get('repo');
+    if (repoParam) {
+        document.getElementById('repo_url').value = repoParam;
+        // Trigger the input event to auto-generate analysis name
+        document.getElementById('repo_url').dispatchEvent(new Event('input'));
+    }
+    
+    document.getElementById('repo_url').addEventListener('input', function(e) {
+        const url = e.target.value;
+        const analysisNameField = document.getElementById('analysis_name');
+        
+        if (url && !analysisNameField.value) {
+            // Extract repository name from URL
+            const match = url.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+            if (match) {
+                const repoName = match[2].replace('.git', '');
+                analysisNameField.value = `${repoName} Analysis`;
+            }
+        }
+    });
+    {% endif %}
+</script>
+{% endblock %}

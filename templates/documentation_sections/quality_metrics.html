@@ -1,0 +1,85 @@
+<!-- Quality Metrics Section -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-primary bg-opacity-10 border-primary border-opacity-25 h-100">
+            <div class="card-body text-center">
+                <h2 class="text-primary mb-1">{{ section_data.content.overall_score }}</h2>
+                <small class="text-muted">Overall Quality Score</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-warning bg-opacity-10 border-warning border-opacity-25 h-100">
+            <div class="card-body text-center">
+                <h2 class="text-warning mb-1">{{ section_data.content.metrics.code_complexity }}</h2>
+                <small class="text-muted">Average Complexity</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-success bg-opacity-10 border-success border-opacity-25 h-100">
+            <div class="card-body text-center">
+                <h2 class="text-success mb-1">{{ section_data.content.metrics.maintainability_index }}</h2>
+                <small class="text-muted">Maintainability Index</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Metrics -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h5>Quality Metrics Breakdown</h5>
+        <div class="list-group list-group-flush">
+            <div class="list-group-item bg-transparent border-0 px-0">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-chart-line me-2"></i>Documentation Coverage</span>
+                    <span class="badge bg-info">{{ section_data.content.metrics.documentation_coverage }}%</span>
+                </div>
+            </div>
+            <div class="list-group-item bg-transparent border-0 px-0">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-vial me-2"></i>Test Coverage</span>
+                    <span class="badge bg-secondary">{{ section_data.content.metrics.test_coverage }}</span>
+                </div>
+            </div>
+            <div class="list-group-item bg-transparent border-0 px-0">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-copy me-2"></i>Code Duplication</span>
+                    <span class="badge bg-secondary">{{ section_data.content.metrics.code_duplication }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <h5>File Quality Ranking</h5>
+        <div class="list-group list-group-flush">
+            {% for file in section_data.content.file_quality_breakdown[:5] %}
+                <div class="list-group-item bg-transparent border-0 px-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ file.filename }}</strong>
+                            <br><small class="text-muted">{{ file.lines }} lines, {{ file.functions }} functions</small>
+                        </div>
+                        <span class="badge {% if file.score >= 80 %}bg-success{% elif file.score >= 60 %}bg-warning{% else %}bg-danger{% endif %}">
+                            {{ file.score }}
+                        </span>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Recommendations -->
+{% if section_data.content.recommendations %}
+<div class="alert alert-info">
+    <h6><i class="fas fa-lightbulb me-2"></i>Quality Recommendations</h6>
+    <ul class="mb-0 text-light">
+        {% for recommendation in section_data.content.recommendations %}
+            <li>{{ recommendation }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}

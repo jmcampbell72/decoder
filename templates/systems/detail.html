@@ -1,0 +1,594 @@
+{% extends 'base.html' %}
+{% block title %}{{ system.name }} — Systems — {{ brand.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.systems_list') }}">Systems</a></li>
+                    <li class="breadcrumb-item active">{{ system.name }}</li>
+                </ol>
+            </nav>
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div>
+                    <h1 class="h2 mb-1">
+                        <i class="fas fa-layer-group me-2" style="background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"></i>{{ system.name }}
+                    </h1>
+                    {% if system.description %}
+                        <p class="text-muted mb-0">{{ system.description }}</p>
+                    {% endif %}
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    {% if latest_analysis and latest_analysis.status == 'completed' %}
+                        <a href="{{ url_for('main.system_graph', system_id=system.id) }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-project-diagram me-2"></i>System Graph
+                        </a>
+                    {% endif %}
+                    <a href="{{ url_for('main.edit_system', system_id=system.id) }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-edit me-2"></i>Edit
+                    </a>
+                    <form method="POST" action="{{ url_for('main.run_system_analysis', system_id=system.id) }}" class="d-inline">
+                        {% if latest_analysis and latest_analysis.status == 'running' %}
+                            <button class="btn btn-warning" disabled>
+                                <span class="spinner-border spinner-border-sm me-1" role="status"></span>Analysis Running…
+                            </button>
+                        {% else %}
+                            <button class="btn btn-primary" type="submit" {% if not system.repos %}disabled title="Add repos first"{% endif %}>
+                                <i class="fas fa-play me-2"></i>Run System Analysis
+                            </button>
+                        {% endif %}
+                    </form>
+                    <form method="POST" action="{{ url_for('main.delete_system', system_id=system.id) }}"
+                          onsubmit="return confirm('Delete this system and all its analyses?')">
+                        <button class="btn btn-outline-danger" type="submit">
+                            <i class="fas fa-trash me-1"></i>Delete
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary stats (if analysed) -->
+    {% if latest_analysis and latest_analysis.status == 'completed' and latest_analysis.summary %}
+    {% set s = latest_analysis.summary %}
+    <div class="row g-3 mb-4" id="summary-stats" style="animation: fadeInUp 0.4s ease;">
+        <div class="col-6 col-md-3">
+            <div class="card text-center h-100">
+                <div class="card-body py-3">
+                    <div class="fw-bold" style="font-size:2rem;color:var(--custom-blue,#23a5da);">{{ s.get('repo_count', 0) }}</div>
+                    <div class="text-muted" style="font-size:0.78rem;text-transform:uppercase;letter-spacing:.05em;">Repos</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center h-100">
+                <div class="card-body py-3">
+                    <div class="fw-bold" style="font-size:2rem;color:#f97316;">{{ s.get('duplicate_functions', 0) + s.get('duplicate_services', 0) }}</div>
+                    <div class="text-muted" style="font-size:0.78rem;text-transform:uppercase;letter-spacing:.05em;">Duplicates</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center h-100">
+                <div class="card-body py-3">
+                    <div class="fw-bold" style="font-size:2rem;color:#a855f7;">{{ s.get('common_patterns', 0) }}</div>
+                    <div class="text-muted" style="font-size:0.78rem;text-transform:uppercase;letter-spacing:.05em;">Shared Patterns</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center h-100">
+                <div class="card-body py-3">
+                    <div class="fw-bold" style="font-size:2rem;color:#ef4444;">{{ s.get('total_aggregated_smells', 0) }}</div>
+                    <div class="text-muted" style="font-size:0.78rem;text-transform:uppercase;letter-spacing:.05em;">Total Smells</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Two-column layout: repos list + findings -->
+    <div class="row g-4">
+
+        <!-- Linked repos -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <span><i class="fas fa-code-branch me-2"></i>Linked Repositories</span>
+                    <span class="badge bg-secondary">{{ system.repos|length }}</span>
+                </div>
+                <div class="card-body p-0">
+                    {% if system.repos %}
+                        <ul class="list-group list-group-flush">
+                            {% for sr in system.repos %}
+                            <li class="list-group-item d-flex align-items-center gap-3 py-3"
+                                style="background: transparent; border-color: rgba(255,255,255,0.07);">
+                                <div class="feature-icon flex-shrink-0" style="width:36px;height:36px;background:var(--primary-gradient);border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                                    <i class="{% if sr.analysis.source_type == 'github' %}fab fa-github{% else %}fas fa-upload{% endif %}" style="font-size:.9rem;color:#fff;"></i>
+                                </div>
+                                <div class="flex-fill" style="min-width:0;">
+                                    <div class="fw-semibold text-truncate" title="{{ sr.analysis.name }}">{{ sr.analysis.name }}</div>
+                                    <div class="text-muted" style="font-size:0.75rem;">{{ sr.analysis.created_at.strftime('%d %b %Y') }}</div>
+                                </div>
+                                <a href="{{ url_for('main.view_analysis', analysis_id=sr.analysis.id) }}"
+                                   class="btn btn-sm btn-outline-secondary flex-shrink-0" title="View analysis">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="text-center py-5 text-muted">
+                            <i class="fas fa-inbox fa-2x mb-3 d-block"></i>
+                            No repos linked yet.<br>
+                            <a href="{{ url_for('main.edit_system', system_id=system.id) }}" class="btn btn-sm btn-outline-primary mt-3">
+                                <i class="fas fa-plus me-1"></i>Add Repos
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Findings -->
+        <div class="col-lg-8">
+            {% if latest_analysis and latest_analysis.status == 'running' %}
+                <div class="card" id="running-card">
+                    <div class="card-body text-center py-5">
+                        <div class="spinner-border mb-3" style="color:var(--custom-blue,#23a5da);width:3rem;height:3rem;" role="status"></div>
+                        <h5 class="mb-1">Analysis in progress…</h5>
+                        <p class="text-muted mb-0">This usually takes a few seconds. The page will refresh automatically.</p>
+                    </div>
+                </div>
+
+            {% elif latest_analysis and latest_analysis.status == 'completed' %}
+                <div class="accordion" id="findingsAccordion" style="animation: fadeInUp 0.5s ease;">
+
+                    <!-- Duplicate Functions -->
+                    <div class="accordion-item border mb-3 rounded" style="background: transparent; overflow: hidden;">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFunc"
+                                    style="background: rgba(249,115,22,0.08); color: #f97316; font-weight:600; border-radius: 0;">
+                                <i class="fas fa-clone me-2"></i>Duplicate Functions
+                                <span class="badge ms-2" style="background:#f97316;">{{ (latest_analysis.duplicate_functions or [])|length }}</span>
+                            </button>
+                        </h2>
+                        <div id="collapseFunc" class="accordion-collapse collapse show" data-bs-parent="#findingsAccordion">
+                            <div class="accordion-body p-0">
+                                {% set dup_funcs = latest_analysis.duplicate_functions or [] %}
+                                {% if dup_funcs %}
+                                    <div class="table-responsive">
+                                        <table class="table table-hover mb-0" style="font-size:0.85rem;">
+                                            <thead>
+                                                <tr>
+                                                    <th class="ps-3">Function</th>
+                                                    <th>Match Type</th>
+                                                    <th>Occurrences (Repo · File · Line)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for df in dup_funcs[:20] %}
+                                                <tr>
+                                                    <td class="ps-3 fw-semibold">{{ df.function_name }}</td>
+                                                    <td>
+                                                        {% if df.get('match_type') == 'exact_signature' %}
+                                                            <span class="badge" style="background:rgba(249,115,22,0.7);font-size:0.72rem;">exact sig</span>
+                                                        {% else %}
+                                                            <span class="badge bg-secondary" style="font-size:0.72rem;">name only</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        {% for occ in df.occurrences %}
+                                                            <div class="d-flex align-items-center gap-1 mb-1" style="flex-wrap:wrap;">
+                                                                <span class="badge bg-secondary" style="font-size:0.7rem;">{{ occ.repo[:18] }}</span>
+                                                                <span class="text-muted" style="font-size:0.72rem;font-family:monospace;" title="{{ occ.file }}">{{ occ.file.split('/')[-1] if '/' in occ.file else occ.file }}</span>
+                                                                {% if occ.get('line') %}<span class="text-muted" style="font-size:0.68rem;">:{{ occ.line }}</span>{% endif %}
+                                                            </div>
+                                                        {% endfor %}
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                                {% if dup_funcs|length > 20 %}
+                                                <tr><td colspan="3" class="text-muted text-center small py-2">… and {{ dup_funcs|length - 20 }} more</td></tr>
+                                                {% endif %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                {% else %}
+                                    <p class="text-muted text-center py-4 mb-0"><i class="fas fa-check-circle text-success me-2"></i>No duplicate functions found.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Duplicate Services -->
+                    <div class="accordion-item border mb-3 rounded" style="background: transparent; overflow: hidden;">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseServices"
+                                    style="background: rgba(249,115,22,0.08); color: #f97316; font-weight:600; border-radius: 0;">
+                                <i class="fas fa-cubes me-2"></i>Duplicate Services / Classes
+                                <span class="badge ms-2" style="background:#f97316;">{{ (latest_analysis.duplicate_services or [])|length }}</span>
+                            </button>
+                        </h2>
+                        <div id="collapseServices" class="accordion-collapse collapse" data-bs-parent="#findingsAccordion">
+                            <div class="accordion-body p-0">
+                                {% set dup_svcs = latest_analysis.duplicate_services or [] %}
+                                {% if dup_svcs %}
+                                    <div class="table-responsive">
+                                        <table class="table table-hover mb-0" style="font-size:0.85rem;">
+                                            <thead>
+                                                <tr>
+                                                    <th class="ps-3">Class / Service</th>
+                                                    <th>Occurrences (Repo · File · Line)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for ds in dup_svcs[:20] %}
+                                                <tr>
+                                                    <td class="ps-3 fw-semibold">{{ ds.service_name }}</td>
+                                                    <td>
+                                                        {% for occ in ds.occurrences %}
+                                                            <div class="d-flex align-items-center gap-1 mb-1" style="flex-wrap:wrap;">
+                                                                <span class="badge bg-secondary" style="font-size:0.7rem;">{{ occ.repo[:18] }}</span>
+                                                                <span class="text-muted" style="font-size:0.72rem;font-family:monospace;" title="{{ occ.file }}">{{ occ.file.split('/')[-1] if '/' in occ.file else occ.file }}</span>
+                                                                {% if occ.get('line') %}<span class="text-muted" style="font-size:0.68rem;">:{{ occ.line }}</span>{% endif %}
+                                                            </div>
+                                                        {% endfor %}
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                                {% if dup_svcs|length > 20 %}
+                                                <tr><td colspan="2" class="text-muted text-center small py-2">… and {{ dup_svcs|length - 20 }} more</td></tr>
+                                                {% endif %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                {% else %}
+                                    <p class="text-muted text-center py-4 mb-0"><i class="fas fa-check-circle text-success me-2"></i>No duplicate services found.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Common Patterns -->
+                    <div class="accordion-item border mb-3 rounded" style="background: transparent; overflow: hidden;">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePatterns"
+                                    style="background: rgba(168,85,247,0.08); color: #a855f7; font-weight:600; border-radius: 0;">
+                                <i class="fas fa-sitemap me-2"></i>Common Patterns &amp; Shared Dependencies
+                                <span class="badge ms-2" style="background:#a855f7;">{{ (latest_analysis.common_patterns or [])|length }}</span>
+                            </button>
+                        </h2>
+                        <div id="collapsePatterns" class="accordion-collapse collapse" data-bs-parent="#findingsAccordion">
+                            <div class="accordion-body">
+                                {% set patterns = latest_analysis.common_patterns or [] %}
+                                {% if patterns %}
+                                    <div class="d-flex flex-wrap gap-2">
+                                        {% for p in patterns[:40] %}
+                                        <div class="d-flex flex-column px-2 py-2 rounded"
+                                             style="background: rgba(168,85,247,0.12); border: 1px solid rgba(168,85,247,0.25); font-size: 0.82rem; min-width: 140px;">
+                                            <div class="d-flex align-items-center gap-1 mb-1">
+                                                {% if p.get('type') == 'class_hierarchy' %}
+                                                    <i class="fas fa-sitemap me-1" style="color:#a855f7; font-size: 0.7rem;"></i>
+                                                {% else %}
+                                                    <i class="fas fa-cube me-1" style="color:#a855f7; font-size: 0.7rem;"></i>
+                                                {% endif %}
+                                                <span class="fw-semibold">{{ p.pattern }}</span>
+                                                <span class="badge ms-auto" style="background:rgba(168,85,247,0.4);font-size:0.65rem;">{{ p.repo_count }} repos</span>
+                                            </div>
+                                            {% if p.get('type') == 'class_hierarchy' %}
+                                                <span class="text-muted" style="font-size:0.7rem;">hierarchy</span>
+                                            {% else %}
+                                                <span class="text-muted" style="font-size:0.7rem;">shared dep</span>
+                                            {% endif %}
+                                            <div class="mt-1">
+                                                {% for repo in p.repos %}
+                                                    <span class="badge bg-dark" style="font-size:0.62rem;border:1px solid rgba(168,85,247,0.3);">{{ repo[:14] }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <p class="text-muted text-center py-2 mb-0"><i class="fas fa-check-circle text-success me-2"></i>No shared dependencies detected.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cross-Repo APIs -->
+                    <div class="accordion-item border mb-3 rounded" style="background: transparent; overflow: hidden;">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAPIs"
+                                    style="background: rgba(20,184,166,0.08); color: #14b8a6; font-weight:600; border-radius: 0;">
+                                <i class="fas fa-exchange-alt me-2"></i>Cross-Repo API Matches
+                                <span class="badge ms-2" style="background:#14b8a6;">{{ (latest_analysis.cross_repo_apis or [])|length }}</span>
+                            </button>
+                        </h2>
+                        <div id="collapseAPIs" class="accordion-collapse collapse" data-bs-parent="#findingsAccordion">
+                            <div class="accordion-body p-0">
+                                {% set apis = latest_analysis.cross_repo_apis or [] %}
+                                {% if apis %}
+                                    <div class="table-responsive">
+                                        <table class="table table-hover mb-0" style="font-size:0.85rem;">
+                                            <thead>
+                                                <tr>
+                                                    <th class="ps-3">Shared Segment / Pattern</th>
+                                                    <th>Auth</th>
+                                                    <th>Endpoints (Repo · File · Path)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for api in apis[:20] %}
+                                                <tr>
+                                                    <td class="ps-3 fw-semibold" style="color:#14b8a6;">{{ api.shared_segment }}</td>
+                                                    <td>
+                                                        {% for scheme in (api.get('auth_schemes') or []) %}
+                                                            <span class="badge me-1" style="background:rgba(20,184,166,0.3);color:#14b8a6;font-size:0.68rem;">{{ scheme }}</span>
+                                                        {% endfor %}
+                                                        {% if not api.get('auth_schemes') %}
+                                                            <span class="text-muted" style="font-size:0.75rem;">—</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        {% for ep in api.endpoints[:4] %}
+                                                            <div class="d-flex align-items-center gap-1 mb-1" style="flex-wrap:wrap;">
+                                                                <span class="badge bg-secondary" style="font-size:0.68rem;">{{ ep.repo[:14] }}</span>
+                                                                <span class="text-muted" style="font-size:0.68rem;font-family:monospace;" title="{{ ep.get('file','') }}">{{ ep.get('file','').split('/')[-1] }}</span>
+                                                                <span class="badge" style="background:rgba(20,184,166,0.2);color:#14b8a6;font-size:0.68rem;">{{ ep.method }} {{ ep.path[:28] }}</span>
+                                                            </div>
+                                                        {% endfor %}
+                                                        {% if api.endpoints|length > 4 %}
+                                                            <span class="text-muted small">+{{ api.endpoints|length - 4 }} more</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                {% else %}
+                                    <p class="text-muted text-center py-4 mb-0"><i class="fas fa-check-circle text-success me-2"></i>No cross-repo API matches found.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Aggregated Smells -->
+                    <div class="accordion-item border rounded" style="background: transparent; overflow: hidden;">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSmells"
+                                    style="background: rgba(239,68,68,0.08); color: #ef4444; font-weight:600; border-radius: 0;">
+                                <i class="fas fa-bug me-2"></i>Aggregated Code Smells
+                                <span class="badge ms-2" style="background:#ef4444;">{{ (latest_analysis.aggregated_smells or [])|length }}</span>
+                            </button>
+                        </h2>
+                        <div id="collapseSmells" class="accordion-collapse collapse" data-bs-parent="#findingsAccordion">
+                            <div class="accordion-body p-0">
+                                {% set smells = latest_analysis.aggregated_smells or [] %}
+                                {% if smells %}
+                                    <!-- Smell Filters -->
+                                    <div class="px-3 py-2 border-bottom d-flex flex-wrap gap-3 align-items-center" style="background:rgba(239,68,68,0.04);">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="text-muted" style="font-size:0.82rem;"><i class="fas fa-filter me-1"></i>Priority:</span>
+                                            <div class="btn-group btn-group-sm" id="systemSeverityFilter">
+                                                <input type="radio" class="btn-check" name="systemSeverity" id="sys-sev-all" value="all" checked>
+                                                <label class="btn btn-outline-secondary" for="sys-sev-all">All</label>
+                                                <input type="radio" class="btn-check" name="systemSeverity" id="sys-sev-high" value="high">
+                                                <label class="btn btn-outline-danger" for="sys-sev-high">High</label>
+                                                <input type="radio" class="btn-check" name="systemSeverity" id="sys-sev-medium" value="medium">
+                                                <label class="btn btn-outline-warning" for="sys-sev-medium">Medium</label>
+                                                <input type="radio" class="btn-check" name="systemSeverity" id="sys-sev-low" value="low">
+                                                <label class="btn btn-outline-secondary" for="sys-sev-low">Low</label>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="text-muted" style="font-size:0.82rem;"><i class="fas fa-search me-1"></i>Smell:</span>
+                                            <select class="form-select form-select-sm" id="systemSmellFilter" style="width:auto;min-width:200px;">
+                                                <option value="all">All Smells</option>
+                                            </select>
+                                        </div>
+                                        <span class="text-muted ms-auto" id="systemSmellCount" style="font-size:0.8rem;">{{ smells|length }} smells</span>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover mb-0" style="font-size:0.85rem;" id="systemSmellsTable">
+                                            <thead>
+                                                <tr>
+                                                    <th class="ps-3">Smell</th>
+                                                    <th>Severity</th>
+                                                    <th>Total</th>
+                                                    <th>Examples</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for smell in smells %}
+                                                {% set sev_classes = '' %}
+                                                {% if smell.high_count > 0 %}{% set sev_classes = sev_classes ~ 'high ' %}{% endif %}
+                                                {% if smell.get('medium_count', 0) > 0 %}{% set sev_classes = sev_classes ~ 'medium ' %}{% endif %}
+                                                {% if smell.get('low_count', 0) > 0 %}{% set sev_classes = sev_classes ~ 'low' %}{% endif %}
+                                                <tr data-severity="{{ sev_classes.strip() }}" data-smell-name="{{ smell.smell|lower }}">
+                                                    <td class="ps-3 fw-semibold">{{ smell.smell }}</td>
+                                                    <td>
+                                                        {% if smell.high_count > 0 %}
+                                                            <span class="badge bg-danger me-1">{{ smell.high_count }} High</span>
+                                                        {% endif %}
+                                                        {% if smell.get('medium_count', 0) > 0 %}
+                                                            <span class="badge bg-warning text-dark me-1">{{ smell.medium_count }} Med</span>
+                                                        {% endif %}
+                                                        {% if smell.get('low_count', 0) > 0 %}
+                                                            <span class="badge bg-secondary me-1">{{ smell.low_count }} Low</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>{{ smell.total_count }}</td>
+                                                    <td>
+                                                        {% for ex in (smell.get('examples') or [])[:2] %}
+                                                            <div class="mb-2">
+                                                                <div class="d-flex align-items-center gap-1 flex-wrap">
+                                                                    <span class="badge bg-secondary" style="font-size:0.68rem;">{{ ex.repo[:14] }}</span>
+                                                                    <span class="text-muted" style="font-size:0.68rem;font-family:monospace;" title="{{ ex.file }}">{{ ex.file.split('/')[-1] if '/' in ex.file else ex.file }}</span>
+                                                                    {% if ex.get('line') %}
+                                                                        <span class="text-muted" style="font-size:0.68rem;"><i class="fas fa-map-marker-alt me-1"></i>L{{ ex.line }}</span>
+                                                                    {% endif %}
+                                                                    {% if ex.get('severity') %}
+                                                                        <span class="badge {% if ex.severity|lower == 'high' %}bg-danger{% elif ex.severity|lower == 'medium' %}bg-warning text-dark{% else %}bg-secondary{% endif %}" style="font-size:0.62rem;">{{ ex.severity }}</span>
+                                                                    {% endif %}
+                                                                </div>
+                                                                {% if ex.get('description') %}
+                                                                    <div class="text-muted mt-1" style="font-size:0.72rem;">{{ ex.description[:120] }}{% if ex.description|length > 120 %}…{% endif %}</div>
+                                                                {% endif %}
+                                                                {% if ex.get('impact') %}
+                                                                    <div class="mt-1" style="font-size:0.7rem;color:#f59e0b;"><i class="fas fa-exclamation-triangle me-1"></i>{{ ex.impact[:100] }}{% if ex.impact|length > 100 %}…{% endif %}</div>
+                                                                {% endif %}
+                                                            </div>
+                                                        {% endfor %}
+                                                        {% if smell.repos|length > 1 %}
+                                                            <div class="text-muted" style="font-size:0.7rem;">{{ smell.repos|length }} repos affected</div>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                {% else %}
+                                    <p class="text-muted text-center py-4 mb-0"><i class="fas fa-check-circle text-success me-2"></i>No code smells aggregated.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            {% elif not system.repos %}
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <div class="feature-icon mx-auto mb-4" style="background: var(--primary-gradient); width: 60px; height: 60px;">
+                            <i class="fas fa-code-branch" style="font-size: 1.5rem;"></i>
+                        </div>
+                        <h5 class="mb-2">Add repos to get started</h5>
+                        <p class="text-muted mb-3">Link some completed analyses to this system, then run the cross-repo analysis.</p>
+                        <a href="{{ url_for('main.edit_system', system_id=system.id) }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Add Repositories
+                        </a>
+                    </div>
+                </div>
+            {% else %}
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <div class="feature-icon mx-auto mb-4" style="background: var(--primary-gradient); width: 60px; height: 60px;">
+                            <i class="fas fa-play" style="font-size: 1.5rem;"></i>
+                        </div>
+                        <h5 class="mb-2">Ready to analyse</h5>
+                        <p class="text-muted mb-3">{{ system.repos|length }} repo{{ 's' if system.repos|length != 1 }} linked. Run the system analysis to discover cross-repo insights.</p>
+                        <form method="POST" action="{{ url_for('main.run_system_analysis', system_id=system.id) }}">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-play me-2"></i>Run System Analysis
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    {% if latest_analysis and latest_analysis.status == 'running' %}
+    var pollUrl = "{{ url_for('main.system_analysis_status', system_id=system.id) }}";
+    function poll() {
+        fetch(pollUrl)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.status === 'completed' || data.status === 'failed') {
+                    window.location.reload();
+                } else {
+                    setTimeout(poll, 3000);
+                }
+            })
+            .catch(function() { setTimeout(poll, 5000); });
+    }
+    setTimeout(poll, 3000);
+    {% endif %}
+
+    var _sysSeverity = 'all';
+    var _sysSmellName = 'all';
+
+    function applySystemSmellFilters() {
+        var table = document.getElementById('systemSmellsTable');
+        if (!table) return;
+        var rows = table.querySelectorAll('tbody tr');
+        var visible = 0;
+        rows.forEach(function(row) {
+            var rowSev = row.getAttribute('data-severity') || '';
+            var rowSmell = row.getAttribute('data-smell-name') || '';
+            var matchSev = _sysSeverity === 'all' || rowSev.split(' ').indexOf(_sysSeverity) !== -1;
+            var matchSmell = _sysSmellName === 'all' || rowSmell === _sysSmellName;
+            if (matchSev && matchSmell) {
+                row.style.display = '';
+                visible++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        var countEl = document.getElementById('systemSmellCount');
+        if (countEl) {
+            var total = rows.length;
+            countEl.textContent = visible === total
+                ? total + ' smells'
+                : visible + ' of ' + total + ' smells';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Populate system smell dropdown dynamically from table data-smell-name values
+        var smellFilter = document.getElementById('systemSmellFilter');
+        var table = document.getElementById('systemSmellsTable');
+        if (smellFilter && table) {
+            var smellNames = [];
+            table.querySelectorAll('tbody tr').forEach(function(row) {
+                var name = row.getAttribute('data-smell-name');
+                if (name && smellNames.indexOf(name) === -1) smellNames.push(name);
+            });
+            smellNames.sort();
+            smellNames.forEach(function(name) {
+                var opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name.charAt(0).toUpperCase() + name.slice(1);
+                smellFilter.appendChild(opt);
+            });
+        }
+
+        var sevFilter = document.getElementById('systemSeverityFilter');
+        if (sevFilter) {
+            sevFilter.querySelectorAll('input[name="systemSeverity"]').forEach(function(input) {
+                input.addEventListener('change', function(e) {
+                    _sysSeverity = e.target.value;
+                    applySystemSmellFilters();
+                });
+            });
+        }
+        if (smellFilter) {
+            smellFilter.addEventListener('change', function(e) {
+                _sysSmellName = e.target.value;
+                applySystemSmellFilters();
+            });
+        }
+        var collapseSmells = document.getElementById('collapseSmells');
+        if (collapseSmells) {
+            collapseSmells.addEventListener('shown.bs.collapse', function() {
+                applySystemSmellFilters();
+            });
+        }
+    });
+})();
+</script>
+{% endblock %}

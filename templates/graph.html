@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block title %}Relationship Graph — {{ analysis.name }}{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/graph.css') }}?v=4">
+{% endblock %}
+
+{% block content %}
+<div class="graph-page-wrapper">
+
+    <!-- ── Toolbar ──────────────────────────────────────────────────────── -->
+    <div class="graph-toolbar">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" style="flex-shrink:0;">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('main.view_analysis', analysis_id=analysis.id) }}">{{ analysis.name | truncate(30, True) }}</a></li>
+                <li class="breadcrumb-item active text-light">Relationship Graph</li>
+            </ol>
+        </nav>
+
+        <!-- Search -->
+        <input type="search" id="graph-search" class="graph-search" placeholder="Search nodes…" autocomplete="off">
+
+        <!-- Filter pills -->
+        <div class="filter-pills">
+            <span style="font-size:0.78rem;color:#64748b;white-space:nowrap;">Filter:</span>
+
+            <button class="filter-pill pill-file active" data-type="file">
+                <span class="pill-dot" style="background:#4e9af1;"></span> File
+            </button>
+            <button class="filter-pill pill-class active" data-type="class">
+                <span class="pill-dot" style="background:#f97316;"></span> Class
+            </button>
+            <button class="filter-pill pill-function active" data-type="function">
+                <span class="pill-dot" style="background:#22c55e;"></span> Function
+            </button>
+            <button class="filter-pill pill-api_endpoint active" data-type="api_endpoint">
+                <span class="pill-dot" style="background:#a855f7;"></span> API
+            </button>
+            <button class="filter-pill pill-package active" data-type="package">
+                <span class="pill-dot" style="background:#64748b;"></span> Package
+            </button>
+        </div>
+
+        <!-- Stats -->
+        <div class="graph-stats ms-auto">
+            <span><strong id="stat-nodes">–</strong> nodes</span>
+            <span><strong id="stat-edges">–</strong> edges</span>
+            <span><strong id="stat-visible">–</strong> visible</span>
+        </div>
+
+        <!-- Actions -->
+        <div class="d-flex gap-2" style="flex-shrink:0;">
+            <button class="btn btn-sm btn-outline-secondary" id="btn-reset-view">
+                <i class="fas fa-compress-arrows-alt me-1"></i>Reset View
+            </button>
+            <button class="btn btn-sm btn-outline-warning" id="btn-regen">
+                <i class="fas fa-sync-alt me-1"></i>Regenerate
+            </button>
+        </div>
+    </div>
+
+    <!-- ── Canvas + Sidebar ──────────────────────────────────────────────── -->
+    <div class="graph-canvas-area">
+
+        <!-- Focus badge -->
+        <div id="focus-mode-badge" class="focus-mode-badge"></div>
+
+        <!-- Loading overlay -->
+        <div id="graph-loading">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2">Building relationship graph…</p>
+        </div>
+
+        <!-- SVG graph -->
+        <svg id="graph-svg"
+             data-url="{{ url_for('main.graph_data', analysis_id=analysis.id) }}"
+             data-regen-url="{{ url_for('main.regenerate_graph', analysis_id=analysis.id) }}"
+             data-insights-url="{{ url_for('main.node_insights', analysis_id=analysis.id) }}">
+        </svg>
+
+        <!-- Inspector sidebar -->
+        <aside id="graph-sidebar">
+            <div class="sidebar-header">
+                <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-sm btn-link text-muted p-0 d-none" id="btn-inspector-back" title="Go back">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <span><i class="fas fa-info-circle me-2 text-primary"></i>Inspector</span>
+                </div>
+                <button class="btn btn-sm btn-link text-muted p-0" id="btn-close-sidebar">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="sidebar-body" id="sidebar-body">
+                <p class="sidebar-placeholder">
+                    <i class="fas fa-mouse-pointer d-block mb-2" style="font-size:1.4rem;"></i>
+                    Click any node to inspect its details and relationships.
+                </p>
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- ── Legend ────────────────────────────────────────────────────────── -->
+    <div class="graph-legend">
+        <span style="font-size:0.75rem;color:#475569;font-weight:600;">EDGES:</span>
+        <div class="legend-item">
+            <div class="legend-line" style="background:#475569;"></div>
+            <span class="legend-label">Contains</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-line" style="background:#64748b;"></div>
+            <span class="legend-label">Imports</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-line" style="background:#a855f7;"></div>
+            <span class="legend-label">Exposes</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-line" style="background:#f97316;"></div>
+            <span class="legend-label">Inherits</span>
+        </div>
+        <span style="margin-left:auto;font-size:0.72rem;color:#475569;">
+            Double-click a node to focus its subgraph &nbsp;·&nbsp; Scroll to zoom &nbsp;·&nbsp; Drag to pan
+        </span>
+    </div>
+
+</div>
+
+<!-- Tooltip -->
+<div id="graph-tooltip">
+    <div class="tt-type"></div>
+    <div class="tt-name"></div>
+    <div class="tt-file"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- D3.js v7 -->
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<!-- Graph logic -->
+<script src="{{ url_for('static', filename='js/graph.js') }}?v=3"></script>
+{% endblock %}

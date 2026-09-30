@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 60" width="160" height="60">
+  <!-- Burger mascot (left side) -->
+  <!-- Top bun -->
+  <ellipse cx="30" cy="20" rx="22" ry="14" fill="#D4831A"/>
+  <ellipse cx="30" cy="16" rx="20" ry="12" fill="#F0A030"/>
+  <!-- Sesame seeds -->
+  <ellipse cx="22" cy="11" rx="2.5" ry="1.5" fill="#C47A12" transform="rotate(-20 22 11)"/>
+  <ellipse cx="31" cy="9"  rx="2.5" ry="1.5" fill="#C47A12" transform="rotate(10 31 9)"/>
+  <ellipse cx="39" cy="12" rx="2.5" ry="1.5" fill="#C47A12" transform="rotate(-15 39 12)"/>
+
+  <!-- Glasses on bun -->
+  <circle cx="23" cy="18" r="6" fill="none" stroke="#1A1A2E" stroke-width="2"/>
+  <circle cx="37" cy="18" r="6" fill="none" stroke="#1A1A2E" stroke-width="2"/>
+  <line x1="29" y1="18" x2="31" y2="18" stroke="#1A1A2E" stroke-width="2"/>
+  <line x1="17" y1="18" x2="14" y2="16" stroke="#1A1A2E" stroke-width="2"/>
+  <line x1="43" y1="18" x2="46" y2="16" stroke="#1A1A2E" stroke-width="2"/>
+
+  <!-- Eyes -->
+  <circle cx="23" cy="18" r="3" fill="#1A1A2E"/>
+  <circle cx="37" cy="18" r="3" fill="#1A1A2E"/>
+  <circle cx="24" cy="17" r="1" fill="white"/>
+  <circle cx="38" cy="17" r="1" fill="white"/>
+
+  <!-- Cheeks -->
+  <ellipse cx="15" cy="22" rx="4" ry="2.5" fill="#FF9999" opacity="0.6"/>
+  <ellipse cx="45" cy="22" rx="4" ry="2.5" fill="#FF9999" opacity="0.6"/>
+
+  <!-- Smile -->
+  <path d="M24 25 Q30 30 36 25" stroke="#1A1A2E" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+  <!-- Lettuce -->
+  <path d="M8 33 Q14 27 20 33 Q26 27 30 33 Q34 27 40 33 Q46 27 52 33 L52 37 Q46 31 40 37 Q34 31 30 37 Q26 31 20 37 Q14 31 8 37 Z" fill="#5CB85C"/>
+
+  <!-- Cheese -->
+  <path d="M7 31 L53 31 L50 37 L10 37 Z" fill="#FFCC00" opacity="0.85"/>
+
+  <!-- Patty -->
+  <rect x="8" y="33" width="44" height="10" rx="4" fill="#8B4513"/>
+
+  <!-- Bottom bun -->
+  <ellipse cx="30" cy="46" rx="22" ry="9" fill="#F0A030"/>
+  <ellipse cx="30" cy="49" rx="22" ry="7" fill="#D4831A"/>
+
+  <!-- Brand text (right side) -->
+  <!-- "DEcoder" in bold chunky style -->
+  <text x="68" y="30" font-family="'Bangers', 'Arial Black', Impact, sans-serif" font-size="22" font-weight="900" fill="#E8261A" letter-spacing="1">DEcoder</text>
+  <text x="68" y="47" font-family="'Bangers', 'Arial Black', Impact, sans-serif" font-size="13" font-weight="700" fill="#FF6B2B" letter-spacing="2">COMBO</text>
+
+  <!-- Small decorative star -->
+  <polygon points="152,8 154,14 160,14 155,18 157,24 152,20 147,24 149,18 144,14 150,14" fill="#FFCC00" transform="scale(0.55) translate(112, -4)"/>
+</svg>

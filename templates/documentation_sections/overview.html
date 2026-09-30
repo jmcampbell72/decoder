@@ -1,0 +1,88 @@
+<!-- Code Overview Section -->
+<div class="mb-4">
+    <p class="lead">{{ section_data.content.summary }}</p>
+</div>
+
+<!-- Statistics Grid -->
+<div class="row mb-4">
+    <div class="col-md-6 col-lg-4 mb-3">
+        <div class="card bg-primary bg-opacity-10 border-primary border-opacity-25 h-100">
+            <div class="card-body text-center">
+                <h3 class="text-primary mb-1">{{ section_data.content.statistics.total_files }}</h3>
+                <small class="text-muted">Total Files</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-4 mb-3">
+        <div class="card bg-success bg-opacity-10 border-success border-opacity-25 h-100">
+            <div class="card-body text-center">
+                <h3 class="text-success mb-1">{{ section_data.content.statistics.total_lines_of_code }}</h3>
+                <small class="text-muted">Lines of Code</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-4 mb-3">
+        <div class="card bg-info bg-opacity-10 border-info border-opacity-25 h-100">
+            <div class="card-body text-center">
+                <h3 class="text-info mb-1">{{ section_data.content.statistics.functions }}</h3>
+                <small class="text-muted">Functions</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-4 mb-3">
+        <div class="card bg-warning bg-opacity-10 border-warning border-opacity-25 h-100">
+            <div class="card-body text-center">
+                <h3 class="text-warning mb-1">{{ section_data.content.statistics.classes_structures }}</h3>
+                <small class="text-muted">Classes/Structures</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-4 mb-3">
+        <div class="card bg-secondary bg-opacity-10 border-secondary border-opacity-25 h-100">
+            <div class="card-body text-center">
+                <h3 class="text-secondary mb-1">{{ section_data.content.statistics.external_dependencies }}</h3>
+                <small class="text-muted">Dependencies</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-4 mb-3">
+        <div class="card bg-danger bg-opacity-10 border-danger border-opacity-25 h-100">
+            <div class="card-body text-center">
+                <h3 class="text-danger mb-1">{{ section_data.content.statistics.api_endpoints }}</h3>
+                <small class="text-muted">API Endpoints</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Programming Languages -->
+<div class="row">
+    <div class="col-md-6">
+        <h5>Programming Languages</h5>
+        <div class="list-group list-group-flush">
+            {% for language in section_data.content.statistics.programming_languages %}
+                <div class="list-group-item bg-transparent border-0 px-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-code me-2"></i>{{ language|title }}</span>
+                        <span class="badge bg-secondary">{{ section_data.content.language_breakdown[language] or 0 }} lines</span>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <h5>Key Dependencies</h5>
+        <div class="list-group list-group-flush">
+            {% for dependency in section_data.content.dependency_list[:10] %}
+                <div class="list-group-item bg-transparent border-0 px-0">
+                    <i class="fas fa-cube me-2"></i>{{ dependency }}
+                </div>
+            {% else %}
+                <div class="list-group-item bg-transparent border-0 px-0">
+                    <span class="text-muted">No external dependencies detected</span>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>

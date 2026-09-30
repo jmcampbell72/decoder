@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% block title %}System Graph — {{ system.name }} — {{ brand.name }}{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/graph.css') }}?v=5">
+<style>
+.pill-repo      { color: var(--system-color-repo); }
+.pill-duplicate { color: var(--system-color-duplicate); }
+.pill-cross_api { color: var(--system-color-cross-api); }
+.pill-pattern   { color: var(--system-color-common-pattern); }
+.pill-smell     { color: var(--system-color-smell-hotspot); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="graph-page-wrapper">
+
+    <!-- Toolbar -->
+    <div class="graph-toolbar">
+        <nav aria-label="breadcrumb" style="flex-shrink:0;">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.systems_list') }}">Systems</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('main.view_system', system_id=system.id) }}">{{ system.name | truncate(28, True) }}</a></li>
+                <li class="breadcrumb-item active text-light">System Graph</li>
+            </ol>
+        </nav>
+
+        <input type="search" id="graph-search" class="graph-search" placeholder="Search nodes…" autocomplete="off">
+
+        <div class="filter-pills">
+            <span style="font-size:0.78rem;color:#64748b;white-space:nowrap;">Filter:</span>
+            <button class="filter-pill pill-repo active" data-type="repo">
+                <span class="pill-dot" style="background:var(--system-color-repo);"></span> Repo
+            </button>
+            <button class="filter-pill pill-file active" data-type="file">
+                <span class="pill-dot" style="background:#4e9af1;"></span> File
+            </button>
+            <button class="filter-pill pill-class active" data-type="class">
+                <span class="pill-dot" style="background:#f97316;"></span> Class
+            </button>
+            <button class="filter-pill pill-function active" data-type="function">
+                <span class="pill-dot" style="background:#22c55e;"></span> Function
+            </button>
+            <button class="filter-pill pill-api_endpoint active" data-type="api_endpoint">
+                <span class="pill-dot" style="background:#a855f7;"></span> API
+            </button>
+            <button class="filter-pill pill-package active" data-type="package">
+                <span class="pill-dot" style="background:#94a3b8;"></span> Package
+            </button>
+        </div>
+
+        <div class="graph-stats ms-auto">
+            <span><strong id="stat-nodes">–</strong> nodes</span>
+            <span><strong id="stat-edges">–</strong> edges</span>
+            <span><strong id="stat-visible">–</strong> visible</span>
+        </div>
+
+        <div class="d-flex gap-2" style="flex-shrink:0;">
+            <button class="btn btn-sm btn-outline-secondary" id="btn-reset-view">
+                <i class="fas fa-compress-arrows-alt me-1"></i>Reset View
+            </button>
+        </div>
+    </div>
+
+    <!-- Canvas + Sidebar -->
+    <div class="graph-canvas-area">
+        <div id="focus-mode-badge" class="focus-mode-badge"></div>
+
+        <div id="graph-loading">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2">Building system graph…</p>
+        </div>
+
+        <svg id="graph-svg"
+             data-url="{{ url_for('main.system_graph_data', system_id=system.id) }}"
+             data-regen-url=""
+             data-insights-url="{{ url_for('main.system_node_insights', system_id=system.id) }}"
+             data-findings-url="{{ url_for('main.system_node_findings', system_id=system.id) }}">
+        </svg>
+
+        <aside id="graph-sidebar">
+            <div class="sidebar-header">
+                <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-sm btn-link text-muted p-0 d-none" id="btn-inspector-back" title="Go back">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <span><i class="fas fa-info-circle me-2 text-primary"></i>Inspector</span>
+                </div>
+                <button class="btn btn-sm btn-link text-muted p-0" id="btn-close-sidebar">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="sidebar-body" id="sidebar-body">
+                <p class="sidebar-placeholder">
+                    <i class="fas fa-mouse-pointer d-block mb-2" style="font-size:1.4rem;"></i>
+                    Click any node to inspect it.
+                </p>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Legend -->
+    <div class="graph-legend">
+        <span style="font-size:0.75rem;color:#475569;font-weight:600;">NODES:</span>
+        <div class="legend-item">
+            <div class="legend-dot" style="width:10px;height:10px;border-radius:50%;background:var(--system-color-repo);flex-shrink:0;"></div>
+            <span class="legend-label">Repo</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot" style="width:10px;height:10px;border-radius:50%;background:var(--system-color-duplicate);flex-shrink:0;"></div>
+            <span class="legend-label">Duplicate</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot" style="width:10px;height:10px;border-radius:50%;background:var(--system-color-common-pattern);flex-shrink:0;"></div>
+            <span class="legend-label">Common Pattern</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot" style="width:10px;height:10px;border-radius:50%;background:var(--system-color-cross-api);flex-shrink:0;"></div>
+            <span class="legend-label">Cross-Repo API</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot" style="width:10px;height:10px;border-radius:50%;background:var(--system-color-smell-hotspot);flex-shrink:0;"></div>
+            <span class="legend-label">Smell Hotspot</span>
+        </div>
+        <div style="width:1px;background:#334155;height:18px;margin:0 6px;"></div>
+        <span style="font-size:0.72rem;color:#475569;">EDGES:</span>
+        <div class="legend-item">
+            <div class="legend-line" style="background:#475569;"></div>
+            <span class="legend-label">Contains</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-line" style="background:#64748b;"></div>
+            <span class="legend-label">Imports</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-line" style="background:#06b6d4;background:repeating-linear-gradient(90deg,#06b6d4 0,#06b6d4 7px,transparent 7px,transparent 10px);height:2px;"></div>
+            <span class="legend-label" style="color:#06b6d4;">Cross-Repo Call</span>
+        </div>
+        <span style="margin-left:auto;font-size:0.72rem;color:#475569;">
+            Double-click a node to focus &nbsp;·&nbsp; Scroll to zoom &nbsp;·&nbsp; Drag to pan
+        </span>
+    </div>
+
+</div>
+
+<div id="graph-tooltip">
+    <div class="tt-type"></div>
+    <div class="tt-name"></div>
+    <div class="tt-file"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script src="{{ url_for('static', filename='js/graph.js') }}?v=3"></script>
+<style>
+.graph-legend .legend-dot { display: inline-block; }
+</style>
+{% endblock %}

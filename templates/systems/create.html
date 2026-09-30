@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% block title %}{% if system %}Edit System{% else %}New System{% endif %} — {{ brand.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 860px;">
+
+    <div class="mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.systems_list') }}">Systems</a></li>
+                <li class="breadcrumb-item active">{% if system %}Edit "{{ system.name }}"{% else %}New System{% endif %}</li>
+            </ol>
+        </nav>
+        <h1 class="h2 mb-1">
+            {% if system %}
+                <i class="fas fa-edit me-2" style="background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"></i>Edit System
+            {% else %}
+                <i class="fas fa-plus-circle me-2" style="background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"></i>New System
+            {% endif %}
+        </h1>
+        <p class="text-muted mb-0">Group analysed repositories to enable cross-repo analysis.</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('main.edit_system', system_id=system.id) if system else url_for('main.create_system') }}">
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-info-circle me-2"></i>System Details
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="name" class="form-label fw-semibold">System Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="name" name="name"
+                           value="{{ system.name if system else '' }}"
+                           placeholder="e.g. E-Commerce Platform, Microservices Cluster" required>
+                    <div class="form-text text-muted">A short, descriptive name for this group of repositories.</div>
+                </div>
+                <div class="mb-0">
+                    <label for="description" class="form-label fw-semibold">Description</label>
+                    <textarea class="form-control" id="description" name="description" rows="3"
+                              placeholder="What does this system do? What repos are included and why?">{{ system.description if system and system.description else '' }}</textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <span><i class="fas fa-code-branch me-2"></i>Link Repositories</span>
+                <span id="selected-count" class="badge bg-primary">0 selected</span>
+            </div>
+            <div class="card-body">
+                {% if available_analyses %}
+                    <p class="text-muted small mb-3">Select one or more completed analyses to include in this system.</p>
+                    <div class="row g-3">
+                        {% for analysis in available_analyses %}
+                        <div class="col-md-6">
+                            <label class="repo-checkbox-card w-100 h-100" for="analysis_{{ analysis.id }}">
+                                <input type="checkbox"
+                                       id="analysis_{{ analysis.id }}"
+                                       name="analysis_ids"
+                                       value="{{ analysis.id }}"
+                                       class="repo-cb"
+                                       {% if linked_ids is defined and analysis.id in linked_ids %}checked{% endif %}>
+                                <div class="repo-card-inner p-3 rounded d-flex align-items-start gap-3">
+                                    <div class="repo-cb-indicator mt-1 flex-shrink-0">
+                                        <i class="fas fa-square-check text-primary d-none checked-icon" style="font-size: 1.1rem;"></i>
+                                        <i class="far fa-square text-muted unchecked-icon" style="font-size: 1.1rem;"></i>
+                                    </div>
+                                    <div class="flex-fill" style="min-width:0;">
+                                        <div class="fw-semibold text-truncate mb-1">{{ analysis.name }}</div>
+                                        {% if analysis.description %}
+                                            <div class="text-muted small text-truncate">{{ analysis.description[:80] }}</div>
+                                        {% endif %}
+                                        <div class="d-flex align-items-center gap-2 mt-1">
+                                            {% if analysis.source_type == 'github' %}
+                                                <span class="badge bg-secondary"><i class="fab fa-github me-1"></i>GitHub</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary"><i class="fas fa-upload me-1"></i>Upload</span>
+                                            {% endif %}
+                                            <span class="text-muted" style="font-size: 0.72rem;">{{ analysis.created_at.strftime('%d %b %Y') }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-inbox fa-2x text-muted mb-3 d-block"></i>
+                        <p class="text-muted mb-2">No completed analyses available.</p>
+                        <a href="{{ url_for('main.upload_form') }}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-upload me-1"></i>Upload Code
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-{{ 'save' if system else 'plus' }} me-2"></i>
+                {% if system %}Save Changes{% else %}Create System{% endif %}
+            </button>
+            <a href="{{ url_for('main.view_system', system_id=system.id) if system else url_for('main.systems_list') }}"
+               class="btn btn-outline-secondary">Cancel</a>
+        </div>
+
+    </form>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.repo-checkbox-card {
+    cursor: pointer;
+    display: block;
+}
+.repo-checkbox-card input[type=checkbox] {
+    display: none;
+}
+.repo-card-inner {
+    border: 2px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.04);
+    transition: border-color 0.18s, background 0.18s;
+}
+.repo-checkbox-card:hover .repo-card-inner {
+    border-color: rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.07);
+}
+.repo-checkbox-card input:checked ~ .repo-card-inner {
+    border-color: var(--custom-blue, #23a5da);
+    background: rgba(35,165,218,0.08);
+}
+.repo-checkbox-card input:checked ~ .repo-card-inner .checked-icon { display: inline-block !important; }
+.repo-checkbox-card input:checked ~ .repo-card-inner .unchecked-icon { display: none; }
+</style>
+<script>
+(function() {
+    function updateCount() {
+        const n = document.querySelectorAll('.repo-cb:checked').length;
+        document.getElementById('selected-count').textContent = n + ' selected';
+    }
+    document.querySelectorAll('.repo-cb').forEach(function(cb) {
+        cb.addEventListener('change', updateCount);
+    });
+    updateCount();
+})();
+</script>
+{% endblock %}

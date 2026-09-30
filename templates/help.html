@@ -1,0 +1,1020 @@
+{% extends "base.html" %}
+
+{% block title %}Help - DeCoder{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-life-ring me-2"></i>Help & Documentation</h2>
+                    <p class="text-muted mb-0">Learn how to use DeCoder to analyze your code</p>
+                </div>
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm position-sticky" style="top: 20px;">
+                <div class="card-header bg-dark border-bottom">
+                    <h6 class="mb-0 text-light">
+                        <i class="fas fa-list me-2"></i>Help Topics
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    <nav class="nav nav-pills flex-column">
+                        <a class="nav-link border-0 rounded-0 text-start text-white active" 
+                           href="#section-upload" 
+                           onclick="showSection('upload', this); return false;">
+                            <i class="fas fa-upload me-2"></i>
+                            Upload Files & Analyze
+                        </a>
+                        <a class="nav-link border-0 rounded-0 text-start text-white" 
+                           href="#section-github" 
+                           onclick="showSection('github', this); return false;">
+                            <i class="fab fa-github me-2"></i>
+                            GitHub Import & Analyze
+                        </a>
+                        <a class="nav-link border-0 rounded-0 text-start text-white" 
+                           href="#section-results" 
+                           onclick="showSection('results', this); return false;">
+                            <i class="fas fa-chart-line me-2"></i>
+                            View Results Page
+                        </a>
+                        <a class="nav-link border-0 rounded-0 text-start text-white" 
+                           href="#section-documentation" 
+                           onclick="showSection('documentation', this); return false;">
+                            <i class="fas fa-file-alt me-2"></i>
+                            Documentation Overview
+                        </a>
+                        <a class="nav-link border-0 rounded-0 text-start text-white" 
+                           href="#section-trustcentre" 
+                           onclick="showSection('trustcentre', this); return false;">
+                            <i class="fas fa-shield-alt me-2"></i>
+                            Trust Centre
+                        </a>
+                        <a class="nav-link border-0 rounded-0 text-start text-white" 
+                           href="#section-dashboard" 
+                           onclick="showSection('dashboard', this); return false;">
+                            <i class="fas fa-tachometer-alt me-2"></i>
+                            Dashboard Overview
+                        </a>
+                        <a class="nav-link border-0 rounded-0 text-start text-white" 
+                           href="#section-mindmap" 
+                           onclick="showSection('mindmap', this); return false;">
+                            <i class="fas fa-project-diagram me-2"></i>
+                            Interactive Mind Map
+                        </a>
+                        <a class="nav-link border-0 rounded-0 text-start text-white" 
+                           href="#section-codeexplorer" 
+                           onclick="showSection('codeexplorer', this); return false;">
+                            <i class="fas fa-search-plus me-2"></i>
+                            Code Explorer
+                        </a>
+                        <a class="nav-link border-0 rounded-0 text-start text-white" 
+                           href="#section-aiunderstanding" 
+                           onclick="showSection('aiunderstanding', this); return false;">
+                            <i class="fas fa-robot me-2"></i>
+                            AI-Enhanced Code Understanding
+                        </a>
+                        <a class="nav-link border-0 rounded-0 text-start text-white" 
+                           href="#section-codesmells" 
+                           onclick="showSection('codesmells', this); return false;">
+                            <i class="fas fa-bug me-2"></i>
+                            Code Smells Analysis
+                        </a>
+                        <a class="nav-link border-0 rounded-0 text-start text-white" 
+                           href="#section-remediation" 
+                           onclick="showSection('remediation', this); return false;">
+                            <i class="fas fa-hard-hat me-2"></i>
+                            Remediation Plan
+                        </a>
+                        <a class="nav-link border-0 rounded-0 text-start text-white" 
+                           href="#section-export" 
+                           onclick="showSection('export', this); return false;">
+                            <i class="fas fa-file-word me-2"></i>
+                            Exporting Your Analysis
+                        </a>
+                        <a class="nav-link border-0 rounded-0 text-start text-white" 
+                           href="#section-sharing" 
+                           onclick="showSection('sharing', this); return false;">
+                            <i class="fas fa-users me-2"></i>
+                            Sharing & Team Collaboration
+                        </a>
+                        <a class="nav-link border-0 rounded-0 text-start text-white" 
+                           href="#section-teamadmin" 
+                           onclick="showSection('teamadmin', this); return false;">
+                            <i class="fas fa-users-cog me-2"></i>
+                            Team Admin
+                        </a>
+                        <a class="nav-link border-0 rounded-0 text-start text-white" 
+                           href="#section-subscription" 
+                           onclick="showSection('subscription', this); return false;">
+                            <i class="fas fa-crown me-2"></i>
+                            Subscription Plans & Account
+                        </a>
+                    </nav>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <div id="help-content">
+                <div id="section-upload" class="section-content">
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-dark border-bottom">
+                            <h4 class="mb-0 text-light">
+                                <i class="fas fa-upload me-2"></i>
+                                How to Upload Files & Run Analysis
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="mb-3">Getting Started with File Upload</h5>
+                            <p>DeCoder allows you to upload your code files directly for instant analysis. Follow these steps:</p>
+                            
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2 text-white"></i>
+                                <strong class="text-white">Supported File Types:</strong> <p  class="mb-0 mt-2 text-white">Python (.py), JavaScript (.js, .jsx, .ts, .tsx), HTML (.html, .htm), CSS (.css), C/C++ (.c, .cpp, .h), C# (.cs), Go (.go), Java (.java), PHP (.php), Ruby (.rb), Swift (.swift), Kotlin (.kt), Rust (.rs)</p>
+                            </div>
+
+                            <ol class="list-group list-group-numbered mb-4">
+                                <li class="list-group-item bg-dark border-secondary">
+                                    <strong>Navigate to Upload Page</strong>
+                                    <p class="mb-0 mt-2">Click on <i class="fas fa-upload"></i> "Upload Code" in the navigation bar at the top of the page.</p>
+                                </li>
+                                <li class="list-group-item bg-dark border-secondary">
+                                    <strong>Enter Analysis Details</strong>
+                                    <ul class="mt-2 mb-0">
+                                        <li><strong>Analysis Name:</strong> Give your analysis a descriptive name (required)</li>
+                                        <li><strong>Description:</strong> Optional description to help you remember the project</li>
+                                    </ul>
+                                </li>
+                                <li class="list-group-item bg-dark border-secondary">
+                                    <strong>Select Files</strong>
+                                    <p class="mb-0 mt-2">Click "Choose Files" and select your code files. You can select multiple files at once (up to 100 files).</p>
+                                </li>
+                                <li class="list-group-item bg-dark border-secondary">
+                                    <strong>Upload & Analyze</strong>
+                                    <p class="mb-0 mt-2">Click the "Upload and Analyze" button. The system will process your files and start the analysis automatically.</p>
+                                </li>
+                                <li class="list-group-item bg-dark border-secondary">
+                                    <strong>View Progress</strong>
+                                    <p class="mb-0 mt-2">You'll be redirected to the analysis page where you can watch the progress in real-time. The analysis typically takes 30-60 seconds.</p>
+                                </li>
+                            </ol>
+
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2 text-white"></i>
+                                <strong class="text-white">File Size Limits:</strong>
+                                <ul class="mb-0 mt-2 text-white">
+                                    <li>Maximum file size: 16MB per file</li>
+                                    <li>Maximum total upload: 160MB</li>
+                                    <li>Maximum number of files: 100</li>
+                                </ul>
+                            </div>
+
+                            <h5 class="mt-4 mb-3">Tips for Best Results</h5>
+                            <ul>
+                                <li>Upload all related files from your project for comprehensive analysis</li>
+                                <li>Ensure files are UTF-8 encoded text files</li>
+                                <li>Use descriptive names for your analyses to easily find them later</li>
+                                <li>Include configuration files and documentation for better insights</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="section-github" class="section-content d-none">
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-dark border-bottom">
+                            <h4 class="mb-0 text-light">
+                                <i class="fab fa-github me-2"></i>
+                                How to Connect GitHub & Run Analysis
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="mb-3">Importing Code from GitHub</h5>
+                            <p>DeCoder can directly analyze code from GitHub repositories without downloading files manually.</p>
+
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2 text-white"></i>
+                                <strong class="text-white">Note:</strong> <span class="text-white">Currently supports public GitHub repositories. Private repository support requires authentication.</span>
+                            </div>
+
+                            <ol class="list-group list-group-numbered mb-4">
+                                <li class="list-group-item bg-dark border-secondary">
+                                    <strong>Navigate to GitHub Import</strong>
+                                    <p class="mb-0 mt-2">From the dashboard, click the <i class="fab fa-github"></i> "Import from GitHub" button or navigate using the menu.</p>
+                                </li>
+                                <li class="list-group-item bg-dark border-secondary">
+                                    <strong>Enter Repository URL</strong>
+                                    <p class="mt-2 mb-0">Paste the full GitHub repository URL, for example:</p>
+                                    <code class="d-block mt-2 p-2 bg-secondary rounded">https://github.com/username/repository</code>
+                                </li>
+                                <li class="list-group-item bg-dark border-secondary">
+                                    <strong>Provide Analysis Details</strong>
+                                    <ul class="mt-2 mb-0">
+                                        <li><strong>Analysis Name:</strong> Enter a name for this analysis</li>
+                                        <li><strong>Description:</strong> Optional description</li>
+                                    </ul>
+                                </li>
+                                <li class="list-group-item bg-dark border-secondary">
+                                    <strong>Import & Analyze</strong>
+                                    <p class="mb-0 mt-2">Click "Import and Analyze". DeCoder will clone the repository and start the analysis process.</p>
+                                </li>
+                                <li class="list-group-item bg-dark border-secondary">
+                                    <strong>Monitor Progress</strong>
+                                    <p class="mb-0 mt-2">Track the import and analysis progress on the results page. Large repositories may take a few minutes.</p>
+                                </li>
+                            </ol>
+
+                            <h5 class="mt-4 mb-3">GitHub Repository Requirements</h5>
+                            <ul>
+                                <li>Repository must be public (or you must have access)</li>
+                                <li>Repository should contain code files in supported languages</li>
+                                <li>URL must be a valid GitHub repository URL</li>
+                            </ul>
+
+                            <div class="alert alert-success">
+                                <i class="fas fa-lightbulb me-2 text-white"></i>
+                                <strong class="text-white">Pro Tip:</strong> <span class="text-white">GitHub import is ideal for analyzing open-source projects, reviewing code before contributing, or getting insights into unfamiliar codebases.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="section-results" class="section-content d-none">
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-dark border-bottom">
+                            <h4 class="mb-0 text-light">
+                                <i class="fas fa-chart-line me-2"></i>
+                                Understanding the View Results Page
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="mb-3">Analysis Results Overview</h5>
+                            <p>The View Results page provides comprehensive insights into your code. Here's what each section means:</p>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-heartbeat me-2 text-primary"></i>Project Health Score</h6>
+                                <p>A visual indicator at the top showing overall code quality:</p>
+                                <ul>
+                                    <li><strong>Excellent (95%):</strong> Simple, well-structured code with low complexity</li>
+                                    <li><strong>Good (75%):</strong> Moderate complexity, generally maintainable</li>
+                                    <li><strong>Complex (50%):</strong> High complexity, may need refactoring</li>
+                                </ul>
+                                <p class="mb-0">The score is calculated based on the number of files, functions, and classes in your project.</p>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-chart-pie me-2 text-success"></i>Executive Dashboard</h6>
+                                <p>High-level project statistics including:</p>
+                                <ul>
+                                    <li><strong>Total Files:</strong> Number of files analyzed</li>
+                                    <li><strong>Languages:</strong> Programming languages detected</li>
+                                    <li><strong>Source Type:</strong> Upload or GitHub import</li>
+                                    <li><strong>Language Badges:</strong> Visual indicators of technologies used</li>
+                                </ul>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-code me-2 text-info"></i>Static Analysis Section</h6>
+                                <p>Detailed code metrics and patterns:</p>
+                                <ul>
+                                    <li><strong>Functions & Classes:</strong> Count of defined functions and classes</li>
+                                    <li><strong>Imports:</strong> External dependencies and libraries used</li>
+                                    <li><strong>Code Patterns:</strong> Common programming patterns detected</li>
+                                    <li><strong>File Details:</strong> Individual file breakdowns with line counts</li>
+                                </ul>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-brain me-2 text-warning"></i>AI Insights Section</h6>
+                                <p>AI-generated analysis providing:</p>
+                                <ul>
+                                    <li><strong>Architecture Overview:</strong> How your code is structured</li>
+                                    <li><strong>Code Quality Assessment:</strong> Strengths and weaknesses</li>
+                                    <li><strong>Security Findings:</strong> Potential security concerns</li>
+                                    <li><strong>Improvement Recommendations:</strong> Suggested enhancements</li>
+                                </ul>
+                            </div>
+                            <div class="alert alert-primary">
+                                <i class="fas fa-file-alt me-2 text-white"></i>
+                                <strong class="text-white">View Full Documentation:</strong> <span class="text-white">Click the "View Documentation" button to see a detailed, structured report of all findings in an easy-to-navigate format.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="section-trustcentre" class="section-content d-none">
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-dark border-bottom">
+                            <h4 class="mb-0 text-light">
+                                <i class="fas fa-shield-alt me-2"></i>
+                                Trust Centre
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert mb-4" style="background: rgba(184,40,40,0.15); border: 1px solid rgba(184,40,40,0.3);">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-lock fa-lg me-3" style="color: var(--custom-red, #B82828);"></i>
+                                    <div>
+                                        <strong class="text-white" style="font-size: 1.05rem;">In memory analysis &mdash; no storage of code.</strong>
+                                        <p class="mb-0 mt-1 text-white" style="opacity: 0.8; font-size: 0.9rem;">Your code is processed entirely in memory and is never written to disk or retained after analysis.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <h5 class="mb-3"><i class="fas fa-eye-slash me-2 text-info"></i>Data Privacy & In-Memory Processing</h5>
+                                <p>DeCoder is built with privacy at its core. When you upload code or import from GitHub:</p>
+                                <ul>
+                                    <li>All analysis is performed <strong>entirely in memory</strong> &mdash; your code is never stored on our servers</li>
+                                    <li>Uploaded files are processed in real time and <strong>discarded immediately</strong> after analysis completes</li>
+                                    <li>No copies of your source code are retained, cached, or backed up</li>
+                                    <li>Analysis results (mind maps, documentation, metrics) are stored for your convenience but contain no raw source code</li>
+                                </ul>
+                            </div>
+
+                            <div class="mb-4">
+                                <h5 class="mb-3"><i class="fas fa-user-shield me-2 text-success"></i>Security Practices</h5>
+                                <p>We follow industry best practices to keep your data safe:</p>
+                                <ul>
+                                    <li><strong>Encrypted connections:</strong> All data transmitted between your browser and DeCoder is encrypted using TLS/HTTPS</li>
+                                    <li><strong>Access controls:</strong> Your analyses are private to your account and cannot be accessed by other users</li>
+                                    <li><strong>No third-party sharing:</strong> Your code and analysis results are never shared with third parties</li>
+                                    <li><strong>Secure authentication:</strong> User accounts are protected with securely hashed passwords</li>
+                                </ul>
+                            </div>
+
+                            <div class="mb-4">
+                                <h5 class="mb-3"><i class="fas fa-robot me-2 text-warning"></i>AI & Data Usage</h5>
+                                <p>DeCoder uses AI to generate insights about your code. Here is how we handle that responsibly:</p>
+                                <ul>
+                                    <li>AI is used <strong>solely for analysis</strong> &mdash; generating documentation, mind maps, quality metrics, and recommendations</li>
+                                    <li>Your code is <strong>not used to train</strong> any AI or machine learning models</li>
+                                    <li>Analysis results and generated documentation belong entirely to you</li>
+                                    <li>AI processing happens on demand and code is not retained after the AI has produced its output</li>
+                                </ul>
+                            </div>
+
+                            <div class="mb-4">
+                                <h5 class="mb-3"><i class="fas fa-sliders-h me-2 text-primary"></i>Your Controls</h5>
+                                <p>You are always in control of your data within DeCoder:</p>
+                                <ul>
+                                    <li><strong>Delete analyses:</strong> Remove any analysis and its generated results at any time from your dashboard</li>
+                                    <li><strong>Manage your account:</strong> Update your profile or delete your account through account settings</li>
+                                    <li><strong>Onboarding preferences:</strong> Choose whether to see the welcome guide on login</li>
+                                    <li><strong>No lock-in:</strong> Your generated documentation and insights can be viewed and used as you see fit</li>
+                                </ul>
+                            </div>
+
+                            <div class="mb-4">
+                                <h5 class="mb-3"><i class="fas fa-envelope me-2 text-secondary"></i>Contact & Questions</h5>
+                                <p>If you have any questions, concerns, or requests related to trust, privacy, or security:</p>
+                                <ul>
+                                    <li>Reach out via the contact options provided in your account settings</li>
+                                    <li>We are committed to transparency and will respond to all trust-related enquiries promptly</li>
+                                </ul>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2 text-white"></i>
+                                <strong class="text-white">Our Commitment:</strong> <span class="text-white">DeCoder is designed to help you understand your code better, without compromising your privacy or intellectual property. Your trust is fundamental to everything we do.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="section-documentation" class="section-content d-none">
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-dark border-bottom">
+                            <h4 class="mb-0 text-light">
+                                <i class="fas fa-file-alt me-2"></i>
+                                Understanding the Documentation (Application Overview)
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="mb-3">Generated Documentation Sections</h5>
+                            <p>The Documentation page provides a comprehensive, structured view of your analysis. Each section offers specific insights:</p>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-chart-pie me-2 text-primary"></i>Overview</h6>
+                                <p>High-level project summary including:</p>
+                                <ul>
+                                    <li>Project purpose and description</li>
+                                    <li>Key statistics (files, languages, lines of code)</li>
+                                    <li>Technology stack overview</li>
+                                    <li>Project complexity indicators</li>
+                                </ul>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-tachometer-alt me-2 text-success"></i>Quality Metrics</h6>
+                                <p>Code quality measurements:</p>
+                                <ul>
+                                    <li>Code coverage and test metrics</li>
+                                    <li>Complexity scores</li>
+                                    <li>Maintainability index</li>
+                                    <li>Code duplication analysis</li>
+                                </ul>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-cube me-2 text-info"></i>Key Components</h6>
+                                <p>Main building blocks of your application:</p>
+                                <ul>
+                                    <li>Primary classes and their responsibilities</li>
+                                    <li>Important functions and methods</li>
+                                    <li>Module organization</li>
+                                    <li>Component relationships</li>
+                                </ul>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-sitemap me-2 text-warning"></i>Architecture</h6>
+                                <p>System design and structure:</p>
+                                <ul>
+                                    <li>Architectural patterns used (MVC, microservices, etc.)</li>
+                                    <li>System layers and tiers</li>
+                                    <li>Data flow and control flow</li>
+                                    <li>Design patterns implemented</li>
+                                </ul>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-shield-alt me-2 text-danger"></i>Security</h6>
+                                <p>Security analysis findings:</p>
+                                <ul>
+                                    <li>Potential vulnerabilities detected</li>
+                                    <li>Authentication and authorization patterns</li>
+                                    <li>Data validation and sanitization</li>
+                                    <li>Security best practices compliance</li>
+                                </ul>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-code me-2 text-secondary"></i>Hardcoded Items</h6>
+                                <p>Detection of hardcoded values:</p>
+                                <ul>
+                                    <li>Hardcoded credentials or API keys (security risk)</li>
+                                    <li>Configuration values that should be externalized</li>
+                                    <li>URLs and endpoints</li>
+                                    <li>Magic numbers and constants</li>
+                                </ul>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-file-alt me-2 text-light"></i>File Details</h6>
+                                <p>Individual file analysis:</p>
+                                <ul>
+                                    <li>File-by-file breakdown</li>
+                                    <li>Purpose and functionality of each file</li>
+                                    <li>Dependencies and imports</li>
+                                    <li>Line counts and complexity per file</li>
+                                </ul>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-lightbulb me-2 text-warning"></i>Recommendations</h6>
+                                <p>AI-generated improvement suggestions:</p>
+                                <ul>
+                                    <li>Code refactoring opportunities</li>
+                                    <li>Performance optimization tips</li>
+                                    <li>Security enhancements</li>
+                                    <li>Best practices to implement</li>
+                                    <li>Technical debt reduction strategies</li>
+                                </ul>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2 text-white"></i>
+                                <strong class="text-white">Navigation:</strong> <span class="text-white">Use the sidebar menu to jump between sections. Each section is designed to be read independently, so you can focus on what matters most to you.</span>
+                            </div>                        
+                        </div>
+                    </div>
+                </div>
+
+                <div id="section-dashboard" class="section-content d-none">
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-dark border-bottom">
+                            <h4 class="mb-0 text-light">
+                                <i class="fas fa-tachometer-alt me-2"></i>
+                                Dashboard Overview
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="mb-3">Your Central Hub</h5>
+                            <p>The Dashboard is the first page you see after logging in. It gives you a complete view of all your code analyses and your account status.</p>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-list me-2 text-primary"></i>Analyses List</h6>
+                                <p>All of your analyses are listed here, showing:</p>
+                                <ul>
+                                    <li><strong>Analysis name and description</strong> you provided when creating it</li>
+                                    <li><strong>Status badge</strong> — Completed, Analyzing, or Failed</li>
+                                    <li><strong>Source type</strong> — whether it came from a file upload or a GitHub import</li>
+                                    <li><strong>Date created</strong> so you can track your history</li>
+                                    <li><strong>Quick action buttons</strong> to view or delete each analysis</li>
+                                </ul>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-plus-circle me-2 text-success"></i>Starting a New Analysis</h6>
+                                <p>Click the <strong>"New Analysis"</strong> button in the top-right corner of the Dashboard to go to the upload page and begin a fresh analysis.</p>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-id-badge me-2 text-warning"></i>Subscription Status Banner</h6>
+                                <p>A banner at the top of the Dashboard displays your current subscription state:</p>
+                                <ul>
+                                    <li><strong>Trial</strong> — shows how many days remain in your free trial with an option to subscribe</li>
+                                    <li><strong>Active</strong> — confirms your subscription is live and all features are available</li>
+                                    <li><strong>Partner</strong> — indicates partner-level access with full benefits</li>
+                                    <li><strong>Expired</strong> — prompts you to subscribe to regain access</li>
+                                </ul>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-layer-group me-2 text-info"></i>Team Shared Analyses</h6>
+                                <p>If you are on a Team or Enterprise plan, analyses shared by your teammates will also appear in your Dashboard, clearly marked as shared.</p>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2 text-white"></i>
+                                <strong class="text-white">Tip:</strong> <span class="text-white">Use descriptive names when creating analyses so they are easy to identify in the Dashboard list later.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="section-mindmap" class="section-content d-none">
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-dark border-bottom">
+                            <h4 class="mb-0 text-light">
+                                <i class="fas fa-project-diagram me-2"></i>
+                                Interactive Mind Map
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="mb-3">Visualising Your Codebase</h5>
+                            <p>The Mind Map is an interactive visual graph that maps out the structure of your entire project at a glance. It is available on the Analysis Results page under the <strong>Mind Map</strong> tab.</p>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-sitemap me-2 text-primary"></i>What the Mind Map Shows</h6>
+                                <ul>
+                                    <li><strong>Files</strong> — each source file in your project appears as a node</li>
+                                    <li><strong>Classes & Functions</strong> — key code structures within each file</li>
+                                    <li><strong>Dependencies</strong> — connections between modules that import from one another</li>
+                                    <li><strong>Language groupings</strong> — nodes are colour-coded by programming language</li>
+                                </ul>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-hand-pointer me-2 text-success"></i>How to Interact</h6>
+                                <ul>
+                                    <li><strong>Zoom in/out</strong> — use your mouse scroll wheel or the zoom buttons to focus on specific areas</li>
+                                    <li><strong>Pan</strong> — click and drag the background to move around the graph</li>
+                                    <li><strong>Click a node</strong> — select a file or component node to highlight its connections</li>
+                                    <li><strong>Reset view</strong> — use the reset button to return to the default full-project view</li>
+                                </ul>
+                            </div>
+
+                            <div class="alert alert-success">
+                                <i class="fas fa-lightbulb me-2 text-white"></i>
+                                <strong class="text-white">Pro Tip:</strong> <span class="text-white">The Mind Map is especially useful for understanding unfamiliar codebases. Start at the central node and follow the connections outward to trace the application's flow.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="section-codeexplorer" class="section-content d-none">
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-dark border-bottom">
+                            <h4 class="mb-0 text-light">
+                                <i class="fas fa-search-plus me-2"></i>
+                                Code Explorer
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="mb-3">Browsing Your Source Files</h5>
+                            <p>The Code Explorer tab on the Analysis Results page lets you browse and read every file that was included in your analysis, without leaving DeCoder.</p>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-folder-open me-2 text-warning"></i>Navigating Files</h6>
+                                <ul>
+                                    <li>A file tree on the left lists all analysed files organised by folder structure</li>
+                                    <li>Click any file name to load its content in the viewer panel on the right</li>
+                                    <li>Files are syntax-highlighted according to their language for easy reading</li>
+                                </ul>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-info-circle me-2 text-info"></i>File Metadata</h6>
+                                <p>Above each file's content you will see key metadata including:</p>
+                                <ul>
+                                    <li>File name and path within the project</li>
+                                    <li>Programming language detected</li>
+                                    <li>Total line count</li>
+                                </ul>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2 text-white"></i>
+                                <strong class="text-white">Note:</strong> <span class="text-white">The Code Explorer displays the files exactly as they were at the time of analysis. It is a read-only view — no changes can be made to your code from within DeCoder.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="section-aiunderstanding" class="section-content d-none">
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-dark border-bottom">
+                            <h4 class="mb-0 text-light">
+                                <i class="fas fa-robot me-2"></i>
+                                AI-Enhanced Code Understanding
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="mb-3">Plain-English Explanations of Your Code</h5>
+                            <p>The AI-Enhanced Code Understanding tab uses OpenAI's GPT models to go beyond raw metrics — it reads your code and explains it in plain English, file by file.</p>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-file-code me-2 text-primary"></i>Per-File AI Summaries</h6>
+                                <p>For each file in your project, the AI generates:</p>
+                                <ul>
+                                    <li><strong>Module purpose</strong> — a concise description of what the file does and its role in the project</li>
+                                    <li><strong>Function explanations</strong> — what each function or method does and what it returns</li>
+                                    <li><strong>Class descriptions</strong> — the responsibility of each class and how it relates to others</li>
+                                    <li><strong>Key logic highlights</strong> — important algorithms or patterns worth noting</li>
+                                </ul>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-layer-group me-2 text-success"></i>Project-Wide Insights</h6>
+                                <ul>
+                                    <li><strong>Architecture overview</strong> — how the files and modules fit together as a whole system</li>
+                                    <li><strong>Technology stack identification</strong> — frameworks, libraries, and tools detected in use</li>
+                                    <li><strong>Entry points</strong> — where the application starts and how requests flow through it</li>
+                                </ul>
+                            </div>
+
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2 text-white"></i>
+                                <strong class="text-white">Processing Time:</strong> <span class="text-white">AI understanding is generated during the analysis phase. Larger projects with many files may take longer. The results are cached so you can revisit them instantly at any time.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="section-codesmells" class="section-content d-none">
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-dark border-bottom">
+                            <h4 class="mb-0 text-light">
+                                <i class="fas fa-bug me-2"></i>
+                                Code Smells Analysis
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="mb-3">Identifying Problem Areas in Your Code</h5>
+                            <p>The Code Smells Analysis tab automatically detects common coding anti-patterns and quality issues that make code harder to maintain, test, or extend.</p>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-list-ul me-2 text-danger"></i>Types of Code Smells Detected</h6>
+                                <ul>
+                                    <li><strong>Duplicated code</strong> — repeated logic that should be extracted into a shared function</li>
+                                    <li><strong>Long methods</strong> — functions that are too large and do too many things at once</li>
+                                    <li><strong>Tight coupling</strong> — components that are too dependent on each other, making changes difficult</li>
+                                    <li><strong>Hardcoded credentials</strong> — passwords, API keys, or secrets embedded directly in code (a security risk)</li>
+                                    <li><strong>Magic numbers</strong> — unexplained numeric constants that should be named variables</li>
+                                    <li><strong>Unsafe functions</strong> — use of dangerous calls such as <code>eval()</code></li>
+                                    <li><strong>SQL injection risks</strong> — patterns that may allow malicious database queries</li>
+                                </ul>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-sort-amount-down me-2 text-warning"></i>Severity Levels</h6>
+                                <p>Each detected issue is assigned a severity level:</p>
+                                <ul>
+                                    <li><strong class="text-danger">Critical</strong> — security risks requiring immediate attention</li>
+                                    <li><strong class="text-warning">High</strong> — significant quality issues affecting maintainability</li>
+                                    <li><strong class="text-info">Medium</strong> — moderate issues worth addressing in your next refactor</li>
+                                    <li><strong class="text-secondary">Low</strong> — minor style or convention issues</li>
+                                </ul>
+                            </div>
+
+                            <div class="alert alert-primary">
+                                <i class="fas fa-hard-hat me-2 text-white"></i>
+                                <strong class="text-white">Next Step:</strong> <span class="text-white">Use the Remediation Plan (accessible from the analysis page) to turn the detected code smells into a structured action plan with time and cost estimates.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="section-remediation" class="section-content d-none">
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-dark border-bottom">
+                            <h4 class="mb-0 text-light">
+                                <i class="fas fa-hard-hat me-2"></i>
+                                Remediation Plan
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="mb-3">Turning Findings Into an Action Plan</h5>
+                            <p>The Remediation Plan converts the code smells and issues detected in your analysis into a structured, prioritised work plan with realistic time and cost estimates.</p>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-map-signs me-2 text-primary"></i>How to Access the Remediation Plan</h6>
+                                <ol>
+                                    <li>Open any completed analysis from your Dashboard</li>
+                                    <li>Click the <strong>"Remediation Plan"</strong> button on the analysis results page</li>
+                                </ol>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-tasks me-2 text-success"></i>What the Plan Contains</h6>
+                                <ul>
+                                    <li><strong>Prioritised issue list</strong> — items ordered from Critical to Low severity</li>
+                                    <li><strong>Estimated hours per issue</strong> — how long each fix is expected to take</li>
+                                    <li><strong>Role assignments</strong> — which type of developer (junior, senior, architect) is best suited to each task</li>
+                                    <li><strong>Total cost estimate</strong> — calculated from your configured hourly rates</li>
+                                    <li><strong>Timeline projection</strong> — how many weeks the full remediation will take</li>
+                                </ul>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-cog me-2 text-warning"></i>Customising the Plan Settings</h6>
+                                <p>Expand the <strong>Plan Settings</strong> panel to tailor the estimates to your organisation:</p>
+                                <ul>
+                                    <li><strong>Hourly rates</strong> — set your own rates for each developer role</li>
+                                    <li><strong>Hours per week</strong> — how many productive hours your team works per week</li>
+                                    <li><strong>Parallel workstreams</strong> — how many developers can work on remediation simultaneously</li>
+                                    <li><strong>Currency</strong> — display costs in your preferred currency</li>
+                                </ul>
+                                <p class="mb-0">Changing any setting instantly recalculates the entire plan.</p>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2 text-white"></i>
+                                <strong class="text-white">Clean Code:</strong> <span class="text-white">If no code smells are detected in your project, the Remediation Plan will confirm your codebase is clean and no action is required.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="section-export" class="section-content d-none">
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-dark border-bottom">
+                            <h4 class="mb-0 text-light">
+                                <i class="fas fa-file-word me-2"></i>
+                                Exporting Your Analysis
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="mb-3">Downloading a Full Summary Report</h5>
+                            <p>Once an analysis is complete, you can export a comprehensive summary as a Microsoft Word document (.docx) to share with your team, include in reports, or archive for future reference.</p>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-download me-2 text-primary"></i>How to Export</h6>
+                                <ol class="list-group list-group-numbered mb-0">
+                                    <li class="list-group-item bg-dark border-secondary">
+                                        <strong>Open a completed analysis</strong> from your Dashboard
+                                    </li>
+                                    <li class="list-group-item bg-dark border-secondary">
+                                        <strong>Click "Export Summary"</strong> — the blue button in the top-right area of the analysis page
+                                    </li>
+                                    <li class="list-group-item bg-dark border-secondary">
+                                        <strong>Your browser will download</strong> a .docx file automatically
+                                    </li>
+                                </ol>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-file-alt me-2 text-success"></i>What the Export Includes</h6>
+                                <ul>
+                                    <li>Project overview and key statistics</li>
+                                    <li>Technology stack and detected languages</li>
+                                    <li>Architecture summary</li>
+                                    <li>Quality metrics and health score</li>
+                                    <li>Security findings</li>
+                                    <li>AI-generated recommendations</li>
+                                    <li>File-by-file breakdown</li>
+                                </ul>
+                            </div>
+
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2 text-white"></i>
+                                <strong class="text-white">Availability:</strong> <span class="text-white">The Export Summary button only appears for analyses that have successfully completed. In-progress or failed analyses cannot be exported.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="section-sharing" class="section-content d-none">
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-dark border-bottom">
+                            <h4 class="mb-0 text-light">
+                                <i class="fas fa-users me-2"></i>
+                                Sharing & Team Collaboration
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="mb-3">Sharing Analyses With Your Team</h5>
+                            <p>On Team and Enterprise plans, you can share individual analyses with everyone in your workspace so colleagues can view the results without needing to run the analysis themselves.</p>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-toggle-on me-2 text-success"></i>Private vs Shared Toggle</h6>
+                                <p>Each analysis you own has a visibility toggle on its results page:</p>
+                                <ul>
+                                    <li><strong><i class="fas fa-lock me-1"></i>Private</strong> — only you can see this analysis (the default for all new analyses)</li>
+                                    <li><strong><i class="fas fa-users me-1"></i>Shared</strong> — all members of your workspace can view this analysis from their Dashboard</li>
+                                </ul>
+                                <p class="mb-0">Click the toggle button to switch between Private and Shared at any time.</p>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-eye me-2 text-info"></i>What Team Members Can See</h6>
+                                <p>When an analysis is shared, team members can:</p>
+                                <ul>
+                                    <li>View all results tabs — Overview, Mind Map, Code Explorer, AI Understanding, Code Smells</li>
+                                    <li>Access the Documentation page</li>
+                                    <li>Open the Remediation Plan</li>
+                                    <li>Export the summary report</li>
+                                </ul>
+                                <p class="mb-0">Team members cannot delete or modify an analysis that belongs to another user.</p>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2 text-white"></i>
+                                <strong class="text-white">Plan Requirement:</strong> <span class="text-white">Sharing is available on Team and Enterprise plans only. Solo plan users can upgrade via Team Admin or by contacting sales.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="section-teamadmin" class="section-content d-none">
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-dark border-bottom">
+                            <h4 class="mb-0 text-light">
+                                <i class="fas fa-users-cog me-2"></i>
+                                Team Admin
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="mb-3">Managing Your Workspace & Team Members</h5>
+                            <p>The Team Admin page is available to workspace administrators and lets you manage your organisation's DeCoder workspace, members, and access levels.</p>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-map-signs me-2 text-primary"></i>How to Access Team Admin</h6>
+                                <p>Click <strong>"Team Admin"</strong> in the navigation menu. This option is visible to users with an admin role in their workspace.</p>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-building me-2 text-success"></i>Workspace Settings</h6>
+                                <ul>
+                                    <li><strong>Workspace name</strong> — rename your organisation's workspace at any time</li>
+                                    <li><strong>Subscription tier badge</strong> — see your current plan (Solo, Team, or Enterprise) at a glance</li>
+                                    <li><strong>Seat usage bar</strong> — a visual indicator showing how many of your available seats are in use</li>
+                                </ul>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-user-plus me-2 text-info"></i>Inviting Team Members</h6>
+                                <ol class="list-group list-group-numbered mb-0">
+                                    <li class="list-group-item bg-dark border-secondary">
+                                        <strong>Enter the email address</strong> of the person you want to invite in the Invite section
+                                    </li>
+                                    <li class="list-group-item bg-dark border-secondary">
+                                        <strong>Select a role</strong> — Admin (can manage the workspace) or Reviewer (view-only access to shared analyses)
+                                    </li>
+                                    <li class="list-group-item bg-dark border-secondary">
+                                        <strong>Send the invitation</strong> — the invitee receives an email with a link to register and join your workspace
+                                    </li>
+                                </ol>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-user-shield me-2 text-warning"></i>Roles Explained</h6>
+                                <ul>
+                                    <li><strong>Admin</strong> — full access: can run analyses, share results, invite/remove members, and manage workspace settings</li>
+                                    <li><strong>Reviewer</strong> — read-only access to analyses that have been shared with the team; cannot run new analyses or manage members</li>
+                                </ul>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-user-times me-2 text-danger"></i>Removing Members</h6>
+                                <p>Admins can remove a team member from the workspace at any time from the members list on the Team Admin page. Removed members immediately lose access to all shared analyses.</p>
+                            </div>
+
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2 text-white"></i>
+                                <strong class="text-white">Seat Limits:</strong> <span class="text-white">Team plan workspaces support up to 5 members. Enterprise plan workspaces have unlimited seats. If you reach your seat limit, contact sales to upgrade.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="section-subscription" class="section-content d-none">
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-dark border-bottom">
+                            <h4 class="mb-0 text-light">
+                                <i class="fas fa-crown me-2"></i>
+                                Subscription Plans & Account
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="mb-3">Choosing the Right Plan</h5>
+                            <p>DeCoder offers three subscription tiers to suit individuals and organisations of all sizes.</p>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-user me-2 text-secondary"></i>Solo Plan</h6>
+                                <ul>
+                                    <li>Designed for individual developers</li>
+                                    <li>Full access to all analysis features — file upload, GitHub import, AI insights, documentation, remediation plans, and exports</li>
+                                    <li>Single user — team sharing and collaboration features are not included</li>
+                                </ul>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-users me-2 text-primary"></i>Team Plan</h6>
+                                <ul>
+                                    <li>Ideal for small development teams</li>
+                                    <li>Everything in Solo, plus team sharing and collaboration</li>
+                                    <li>Up to <strong>5 members</strong> per workspace</li>
+                                    <li>Admin and Reviewer role management</li>
+                                </ul>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-building me-2 text-warning"></i>Enterprise Plan</h6>
+                                <ul>
+                                    <li>Built for larger organisations</li>
+                                    <li>Everything in Team, plus unlimited workspace members</li>
+                                    <li>Priority support and dedicated onboarding</li>
+                                </ul>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-hourglass-half me-2 text-info"></i>Free Trial</h6>
+                                <p>New workspaces start on a free trial that gives you access to all features for a limited period. The number of days remaining is shown on your Dashboard. When your trial ends, subscribe to continue using DeCoder.</p>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6><i class="fas fa-user-circle me-2 text-success"></i>Managing Your Account</h6>
+                                <p>Access your account settings from the navigation menu under your username:</p>
+                                <ul>
+                                    <li><strong>Profile</strong> — update your username, email address, or password</li>
+                                    <li><strong>Onboarding preferences</strong> — choose whether to show the welcome guide each time you log in</li>
+                                    <li><strong>Delete account</strong> — permanently remove your account and all associated data</li>
+                                </ul>
+                            </div>
+
+                            <div class="alert alert-primary">
+                                <i class="fas fa-envelope me-2 text-white"></i>
+                                <strong class="text-white">Upgrading or Enquiring:</strong> <span class="text-white">To upgrade your plan or discuss Enterprise pricing, click the <strong>Subscribe Now</strong> button on your Dashboard, or contact our sales team directly.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showSection(sectionKey, element) {
+    document.querySelectorAll('.section-content').forEach(section => {
+        section.classList.add('d-none');
+    });
+    
+    document.getElementById('section-' + sectionKey).classList.remove('d-none');
+    
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+    
+    if (element) {
+        element.classList.add('active');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var hash = window.location.hash.replace('#', '');
+    if (hash && document.getElementById('section-' + hash)) {
+        var navLink = document.querySelector('a[href="#section-' + hash + '"]');
+        showSection(hash, navLink);
+    }
+    if (sessionStorage.getItem('trustcentre')) {
+        sessionStorage.removeItem('trustcentre');
+        var navLink = document.querySelector('a[href="#section-trustcentre"]');
+        showSection('trustcentre', navLink);
+    }
+});
+</script>
+{% endblock %}

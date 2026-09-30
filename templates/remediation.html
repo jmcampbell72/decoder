@@ -1,0 +1,1062 @@
+{% extends "base.html" %}
+
+{% block title %}Remediation Plan - {{ analysis.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.view_analysis', analysis_id=analysis.id) }}">{{ analysis.name }}</a></li>
+                    <li class="breadcrumb-item active">Remediation Plan</li>
+                </ol>
+            </nav>
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h1 class="h2 mb-1"><i class="fas fa-hard-hat me-2"></i>Remediation Plan</h1>
+                    <p class="text-muted mb-0">Time & resource estimate to resolve identified code smells for <strong>{{ analysis.name }}</strong></p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('main.view_analysis', analysis_id=analysis.id) }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Analysis
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if plan.total_items == 0 %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
+                    <h4>No Code Smells Detected</h4>
+                    <p class="text-muted">Your codebase looks clean. No remediation work is required at this time.</p>
+                    <a href="{{ url_for('main.view_analysis', analysis_id=analysis.id) }}" class="btn btn-primary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Analysis
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-dark border-bottom d-flex justify-content-between align-items-center" role="button" data-bs-toggle="collapse" data-bs-target="#settingsPanel" aria-expanded="false" aria-controls="settingsPanel" style="cursor: pointer;">
+                    <h5 class="mb-0 text-light">
+                        <i class="fas fa-cog me-2 text-secondary"></i>Plan Settings
+                    </h5>
+                    <i class="fas fa-chevron-down text-muted"></i>
+                </div>
+                <div class="collapse" id="settingsPanel">
+                    <div class="card-body">
+                        <p class="small text-muted mb-3"><i class="fas fa-info-circle me-1"></i>Adjust rates and settings to match your organisation. Changes recalculate the entire plan.</p>
+                        <form id="settingsForm">
+                            <h6 class="text-light mb-3">Resource Hourly Rates</h6>
+                            <div class="row g-3 mb-4">
+                                {% for role, rate in calc_info.resource_rates.items() %}
+                                <div class="col-md-4 col-sm-6">
+                                    <label class="form-label small text-muted">{{ role }}</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text">{{ calc_info.currency_symbol }}</span>
+                                        <input type="number" class="form-control" name="rate_{{ role|lower|replace(' ', '_')|replace('-', '_') }}" value="{{ rate|int }}" min="1" step="1">
+                                        <span class="input-group-text">/hr</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-4 col-sm-6">
+                                    <label class="form-label small text-muted">Hours Per Week</label>
+                                    <input type="number" class="form-control form-control-sm" name="hours_per_week" value="{{ calc_info.hours_per_week }}" min="1" max="60" step="1">
+                                </div>
+                                <div class="col-md-4 col-sm-6">
+                                    <label class="form-label small text-muted">Parallel Workstreams</label>
+                                    <select class="form-select form-select-sm" name="parallel_streams">
+                                        {% for i in range(1, 5) %}
+                                        <option value="{{ i }}" {% if calc_info.parallel_streams == i %}selected{% endif %}>{{ i }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4 col-sm-6">
+                                    <label class="form-label small text-muted">Contingency Buffer (%)</label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" class="form-control" name="contingency_percent" value="{{ plan.contingency_percent }}" min="0" max="50" step="5">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                    <small class="text-muted" style="font-size: 0.7rem;">0-50% buffer for estimation uncertainty</small>
+                                </div>
+                                <div class="col-md-4 col-sm-6">
+                                    <label class="form-label small text-muted">Currency</label>
+                                    <select class="form-select form-select-sm" name="currency">
+                                        {% for code, info in calc_info.currency_options.items() %}
+                                        <option value="{{ code }}" {% if calc_info.currency_code == code %}selected{% endif %}>{{ info.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-sync-alt me-1"></i>Recalculate</button>
+                                <a href="{{ url_for('main.view_remediation_plan', analysis_id=analysis.id) }}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-undo me-1"></i>Reset to Defaults</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .remediation-summary-card {
+            background: #1e1e1e;
+            border: 1px solid #333 !important;
+            height: 100%;
+            transition: transform 0.2s;
+        }
+        .remediation-summary-card:hover {
+            transform: translateY(-5px);
+        }
+        .remediation-summary-card .card-body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 140px;
+        }
+    </style>
+
+    <div class="row mb-4 g-3">
+        <div class="col-md-3">
+            <div class="card shadow-sm remediation-summary-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-bug fa-2x text-danger mb-2"></i>
+                    <h3 class="fw-bold mb-0 text-light">{{ plan.total_items }}</h3>
+                    <small class="text-muted">Issues to Resolve</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm remediation-summary-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-clock fa-2x text-warning mb-2"></i>
+                    <h3 class="fw-bold mb-0 text-light">{{ plan.total_hours }}h</h3>
+                    <small class="text-muted">Estimated Effort</small>
+                    {% if plan.contingency_percent > 0 %}
+                    <div class="mt-1"><small class="text-warning" style="font-size: 0.7rem;">incl. {{ plan.contingency_hours }}h contingency ({{ plan.contingency_percent }}%)</small></div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm remediation-summary-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-calendar-alt fa-2x text-danger mb-2"></i>
+                    <h3 class="fw-bold mb-0 text-light">{{ plan.total_weeks }} wks</h3>
+                    <small class="text-muted">Projected Timeline</small>
+                    {% if plan.contingency_percent > 0 %}
+                    <div class="mt-1"><small class="text-danger" style="font-size: 0.7rem;">incl. {{ plan.contingency_weeks }} wk{{ 's' if plan.contingency_weeks != 1 }} contingency ({{ plan.contingency_percent }}%)</small></div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm remediation-summary-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-money-bill-wave fa-2x text-success mb-2"></i>
+                    <h3 class="fw-bold mb-0 text-light">{{ calc_info.currency_symbol }}{{ "{:,.0f}".format(plan.total_cost) }}</h3>
+                    <small class="text-muted">Estimated Cost ({{ calc_info.currency_code }})</small>
+                    {% if plan.contingency_percent > 0 %}
+                    <div class="mt-1"><small class="text-success" style="font-size: 0.7rem;">incl. {{ calc_info.currency_symbol }}{{ "{:,.0f}".format(plan.contingency_cost) }} contingency ({{ plan.contingency_percent }}%)</small></div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <ul class="nav nav-tabs nav-fill" id="remediationTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="exec-summary-tab" data-bs-toggle="tab" data-bs-target="#exec-summary" type="button" role="tab" aria-controls="exec-summary" aria-selected="true">
+                        <i class="fas fa-chart-pie me-2"></i>Executive Summary
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="risk-analysis-tab" data-bs-toggle="tab" data-bs-target="#risk-analysis" type="button" role="tab" aria-controls="risk-analysis" aria-selected="false">
+                        <i class="fas fa-shield-alt me-2"></i>Risk Analysis
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="file-detail-tab" data-bs-toggle="tab" data-bs-target="#file-detail" type="button" role="tab" aria-controls="file-detail" aria-selected="false">
+                        <i class="fas fa-file-code me-2"></i>File-Level Detail
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="tab-content" id="remediationTabsContent">
+
+        <!-- Tab 1: Executive Summary -->
+        <div class="tab-pane fade show active" id="exec-summary" role="tabpanel" aria-labelledby="exec-summary-tab">
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-dark border-bottom">
+                            <h5 class="mb-0 text-light">
+                                <i class="fas fa-chart-gantt me-2 text-primary"></i>Remediation Timeline (Gantt Chart)
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            {% if plan.parallel_streams > 1 %}
+                            <div class="px-3 pt-3">
+                                <small class="text-muted"><i class="fas fa-code-branch me-1"></i>Tasks distributed across {{ plan.parallel_streams }} parallel workstreams</small>
+                            </div>
+                            {% endif %}
+                            <div class="gantt-container">
+                                <div class="gantt-header">
+                                    <div class="gantt-label-col">Task</div>
+                                    {% for week in plan.week_range %}
+                                    <div class="gantt-week-col">Wk {{ week }}</div>
+                                    {% endfor %}
+                                </div>
+                                {% for task in plan.gantt_tasks %}
+                                <div class="gantt-row">
+                                    <div class="gantt-label-col">
+                                        <div class="gantt-task-name">
+                                            {{ task.name }}
+                                            {% if plan.parallel_streams > 1 %}
+                                            <span class="badge bg-secondary ms-1" style="font-size: 0.6rem;">Stream {{ task.stream }}</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="gantt-task-meta">
+                                            <span class="badge 
+                                                {% if task.risk_category == 'Security & Compliance Risk' %}bg-danger
+                                                {% elif task.risk_category == 'Operational Risk' %}bg-warning text-dark
+                                                {% elif task.risk_category == 'Cross-cutting' %}bg-purple
+                                                {% elif task.risk_category == 'Contingency' %}bg-contingency
+                                                {% else %}bg-info{% endif %}" style="font-size: 0.65rem;">
+                                                {{ task.risk_category }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    {% for week in plan.week_range %}
+                                    <div class="gantt-week-col">
+                                        {% if week >= task.start_week and week <= task.end_week %}
+                                        <div class="gantt-bar 
+                                            {% if task.risk_category == 'Cross-cutting' %}gantt-bar-purple
+                                            {% elif task.risk_category == 'Contingency' %}gantt-bar-contingency
+                                            {% elif task.risk_category == 'Security & Compliance Risk' %}gantt-bar-danger
+                                            {% elif task.risk_category == 'Operational Risk' %}gantt-bar-warning
+                                            {% else %}gantt-bar-info{% endif %}
+                                            {% if week == task.start_week %} gantt-bar-start{% endif %}
+                                            {% if week == task.end_week %} gantt-bar-end{% endif %}"
+                                            {% if week == task.start_week %}
+                                            title="{{ task.name }}: {{ task.hours }}h, {{ task.item_count }} issues, {{ task.resource }}"
+                                            {% endif %}>
+                                            {% if week == task.start_week %}
+                                            <span class="gantt-bar-label">{{ task.hours }}h</span>
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-dark border-bottom">
+                            <h5 class="mb-0 text-light">
+                                <i class="fas fa-users me-2 text-success"></i>Resource Requirements
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Resource Type</th>
+                                            <th class="text-center">Issues</th>
+                                            <th class="text-center">Hours</th>
+                                            <th class="text-center">Rate/hr</th>
+                                            <th class="text-end">Cost</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for resource_type, data in plan.resource_summary.items() %}
+                                        <tr>
+                                            <td>
+                                                {% if 'QA' in resource_type %}
+                                                <i class="fas fa-vial me-2 text-warning"></i>
+                                                {% elif 'Product Owner' in resource_type %}
+                                                <i class="fas fa-user-tie me-2 text-success"></i>
+                                                {% elif 'Project Manager' in resource_type %}
+                                                <i class="fas fa-tasks me-2 text-info"></i>
+                                                {% else %}
+                                                <i class="fas fa-user-cog me-2 text-primary"></i>
+                                                {% endif %}
+                                                {{ resource_type }}
+                                            </td>
+                                            <td class="text-center">{{ data['items'] }}</td>
+                                            <td class="text-center">{{ data.hours }}h</td>
+                                            <td class="text-center">{{ calc_info.currency_symbol }}{{ data.rate }}</td>
+                                            <td class="text-end fw-bold">{{ calc_info.currency_symbol }}{{ "{:,.0f}".format(data.cost) }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                    <tfoot>
+                                        {% if plan.contingency_percent > 0 %}
+                                        <tr class="border-top">
+                                            <td class="fw-bold">Subtotal</td>
+                                            <td class="text-center fw-bold">{{ plan.total_items }}</td>
+                                            <td class="text-center fw-bold">{{ plan.base_hours }}h</td>
+                                            <td></td>
+                                            <td class="text-end fw-bold">{{ calc_info.currency_symbol }}{{ "{:,.0f}".format(plan.base_cost) }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <i class="fas fa-shield-alt me-2 text-warning"></i>
+                                                Contingency Buffer ({{ plan.contingency_percent }}%)
+                                            </td>
+                                            <td></td>
+                                            <td class="text-center">{{ plan.contingency_hours }}h</td>
+                                            <td></td>
+                                            <td class="text-end">{{ calc_info.currency_symbol }}{{ "{:,.0f}".format(plan.contingency_cost) }}</td>
+                                        </tr>
+                                        <tr class="border-top">
+                                            <td class="fw-bold">Total (incl. contingency)</td>
+                                            <td></td>
+                                            <td class="text-center fw-bold">{{ plan.total_hours }}h</td>
+                                            <td></td>
+                                            <td class="text-end fw-bold">{{ calc_info.currency_symbol }}{{ "{:,.0f}".format(plan.total_cost) }}</td>
+                                        </tr>
+                                        {% else %}
+                                        <tr class="border-top">
+                                            <td class="fw-bold">Total</td>
+                                            <td class="text-center fw-bold">{{ plan.total_items }}</td>
+                                            <td class="text-center fw-bold">{{ plan.total_hours }}h</td>
+                                            <td></td>
+                                            <td class="text-end fw-bold">{{ calc_info.currency_symbol }}{{ "{:,.0f}".format(plan.total_cost) }}</td>
+                                        </tr>
+                                        {% endif %}
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-dark border-bottom">
+                            <h5 class="mb-0 text-light">
+                                <i class="fas fa-heartbeat me-2 text-danger"></i>Current Health
+                            </h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <div class="position-relative d-inline-block mb-3">
+                                <svg width="100" height="100">
+                                    <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="10"/>
+                                    <circle cx="50" cy="50" r="42" fill="none" 
+                                            stroke="{% if health.score >= 80 %}#28a745{% elif health.score >= 60 %}#ffc107{% else %}#dc3545{% endif %}" 
+                                            stroke-width="10" 
+                                            stroke-dasharray="{{ health.score * 2.64 }}, 264" 
+                                            stroke-linecap="round" transform="rotate(-90 50 50)"/>
+                                </svg>
+                                <div class="position-absolute top-50 start-50 translate-middle">
+                                    <h4 class="mb-0 fw-bold">{{ health.score }}%</h4>
+                                </div>
+                            </div>
+                            <p class="text-muted mb-2">Code Health Score</p>
+                            <div class="text-start">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small>Maintainability</small>
+                                    <small class="fw-bold">{{ health.maintainability }}%</small>
+                                </div>
+                                <div class="progress mb-2" style="height: 6px;">
+                                    <div class="progress-bar bg-success" style="width: {{ health.maintainability }}%"></div>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small>Scalability</small>
+                                    <small class="fw-bold">{{ health.scalability }}%</small>
+                                </div>
+                                <div class="progress mb-2" style="height: 6px;">
+                                    <div class="progress-bar bg-primary" style="width: {{ health.scalability }}%"></div>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small>Testability</small>
+                                    <small class="fw-bold">{{ health.testability }}%</small>
+                                </div>
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar bg-warning" style="width: {{ health.testability }}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- End Tab 1 -->
+
+        <!-- Tab 2: Risk Analysis -->
+        <div class="tab-pane fade" id="risk-analysis" role="tabpanel" aria-labelledby="risk-analysis-tab">
+
+            <div class="d-flex justify-content-end mb-3">
+                <button class="btn btn-sm btn-outline-secondary" id="toggleAllCards" data-expanded="false">
+                    <i class="fas fa-expand-alt me-1"></i><span>Expand All</span>
+                </button>
+            </div>
+
+            {% set security_cats = plan.categories|selectattr('risk_category', 'equalto', 'Security & Compliance Risk')|list %}
+            {% set operational_cats = plan.categories|selectattr('risk_category', 'equalto', 'Operational Risk')|list %}
+            {% set debt_cats = plan.categories|selectattr('risk_category', 'equalto', 'Technical Debt')|list %}
+
+            {% macro render_risk_group(group_cats, group_icon, group_color, group_name, group_badge_class) %}
+            {% if group_cats %}
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="fas fa-{{ group_icon }} fa-lg text-{{ group_color }} me-2"></i>
+                        <h4 class="mb-0">{{ group_name }}</h4>
+                        <span class="badge {{ group_badge_class }} ms-2">{{ group_cats|sum(attribute='high_count') + group_cats|sum(attribute='medium_count') + group_cats|sum(attribute='low_count') }} issues</span>
+                    </div>
+                    {% for category in group_cats %}
+                    {% set card_id = (group_name + '-' + category.name)|replace(' ', '-')|replace('/', '-')|replace('&', '')|lower %}
+                    <div class="card border-0 shadow-sm mb-3 remediation-category-card remediation-collapsible-card">
+                        <div class="card-header bg-transparent border-0 py-3 px-3" role="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ card_id }}" aria-expanded="false" aria-controls="collapse-{{ card_id }}" style="cursor: pointer;">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-chevron-right me-2 collapse-indicator text-muted" style="transition: transform 0.2s; font-size: 0.75rem;"></i>
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-{{ group_icon }} text-{{ group_color }} me-2"></i>{{ category.name }}
+                                    </h5>
+                                </div>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="d-flex gap-1">
+                                        {% if category.high_count > 0 %}
+                                        <span class="badge bg-danger">{{ category.high_count }} High</span>
+                                        {% endif %}
+                                        {% if category.medium_count > 0 %}
+                                        <span class="badge bg-warning text-dark">{{ category.medium_count }} Med</span>
+                                        {% endif %}
+                                        {% if category.low_count > 0 %}
+                                        <span class="badge bg-info">{{ category.low_count }} Low</span>
+                                        {% endif %}
+                                    </div>
+                                    <small class="text-muted d-none d-md-inline">{{ category.total_hours|round(1) }}h &middot; {{ category.resource_type }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="collapse" id="collapse-{{ card_id }}">
+                            <div class="card-body pt-0 px-3 pb-3">
+                                <div class="alert alert-dark border-0 mb-3" style="background-color: rgba(0,0,0,0.2);">
+                                    <i class="fas fa-briefcase me-2 text-warning"></i>
+                                    <strong>Business Justification:</strong>
+                                    <span class="text-light">{{ category.justification }}</span>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>File</th>
+                                                <th>Issue</th>
+                                                <th class="text-center">Severity</th>
+                                                <th class="text-end">Est. Hours</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in category.issues %}
+                                            <tr>
+                                                <td><code class="small">{{ item.file }}</code></td>
+                                                <td class="small">{{ item.description }}</td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-{{ 'danger' if item.severity == 'High' else 'warning text-dark' if item.severity == 'Medium' else 'info' }}" style="font-size: 0.7rem;">
+                                                        {{ item.severity }}
+                                                    </span>
+                                                </td>
+                                                <td class="text-end">{{ item.estimated_hours }}h</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            {% endmacro %}
+
+            {{ render_risk_group(security_cats, 'shield-alt', 'danger', 'Security & Compliance Risk', 'bg-danger') }}
+            {{ render_risk_group(operational_cats, 'exclamation-triangle', 'warning', 'Operational Risk', 'bg-warning text-dark') }}
+            {{ render_risk_group(debt_cats, 'wrench', 'info', 'Technical Debt', 'bg-info') }}
+
+        </div>
+        <!-- End Tab 2 -->
+
+        <!-- Tab 3: File-Level Detail -->
+        <div class="tab-pane fade" id="file-detail" role="tabpanel" aria-labelledby="file-detail-tab">
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-dark border-bottom">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                <h5 class="mb-0 text-light">
+                                    <i class="fas fa-file-code me-2 text-primary"></i>All Issues by File
+                                </h5>
+                                <div class="d-flex flex-wrap gap-2 align-items-center">
+                                    <div class="input-group input-group-sm" style="width: 220px;">
+                                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                        <input type="text" class="form-control" id="textSearchInput" placeholder="Search files or issues...">
+                                    </div>
+                                    <select class="form-select form-select-sm" id="severityFilterSelect" style="width: auto;">
+                                        <option value="">All Severities</option>
+                                        <option value="High">High</option>
+                                        <option value="Medium">Medium</option>
+                                        <option value="Low">Low</option>
+                                    </select>
+                                    <select class="form-select form-select-sm" id="categoryFilterSelect" style="width: auto;">
+                                        <option value="">All Categories</option>
+                                        {% for category in plan.categories %}
+                                        <option value="{{ category.name }}">{{ category.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-muted" id="issueCounter">Displaying {{ plan.total_items }} of {{ plan.total_items }} issues</small>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0" id="fileDetailTable">
+                                    <thead>
+                                        <tr>
+                                            <th class="ps-3 sortable-header" data-sort="file" role="button">
+                                                File <i class="fas fa-sort ms-1 text-muted sort-icon"></i>
+                                            </th>
+                                            <th class="sortable-header" data-sort="category" role="button">
+                                                Category <i class="fas fa-sort ms-1 text-muted sort-icon"></i>
+                                            </th>
+                                            <th>Issue</th>
+                                            <th class="text-center sortable-header" data-sort="severity" role="button">
+                                                Severity <i class="fas fa-sort ms-1 text-muted sort-icon"></i>
+                                            </th>
+                                            <th class="text-center">Risk Type</th>
+                                            <th class="text-end pe-3 sortable-header" data-sort="hours" role="button">
+                                                Est. Hours <i class="fas fa-sort ms-1 text-muted sort-icon"></i>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="fileDetailBody">
+                                        {% for category in plan.categories %}
+                                        {% for item in category.issues %}
+                                        <tr class="file-detail-row"
+                                            data-severity="{{ item.severity }}"
+                                            data-category="{{ category.name }}"
+                                            data-file="{{ item.file|lower }}"
+                                            data-description="{{ item.description|lower }}"
+                                            data-hours="{{ item.estimated_hours }}">
+                                            <td class="ps-3"><code class="small">{{ item.file }}</code></td>
+                                            <td>
+                                                <span class="small">{{ category.name }}</span>
+                                            </td>
+                                            <td class="small">{{ item.description }}</td>
+                                            <td class="text-center">
+                                                <span class="badge bg-{{ 'danger' if item.severity == 'High' else 'warning text-dark' if item.severity == 'Medium' else 'info' }}" style="font-size: 0.7rem;">
+                                                    {{ item.severity }}
+                                                </span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge 
+                                                    {% if category.risk_category == 'Security & Compliance Risk' %}bg-danger
+                                                    {% elif category.risk_category == 'Operational Risk' %}bg-warning text-dark
+                                                    {% else %}bg-info{% endif %}" style="font-size: 0.65rem;">
+                                                    {{ category.risk_category }}
+                                                </span>
+                                            </td>
+                                            <td class="text-end pe-3">{{ item.estimated_hours }}h</td>
+                                        </tr>
+                                        {% endfor %}
+                                        {% endfor %}
+                                        <tr id="noFilterResults" style="display: none;">
+                                            <td colspan="6" class="text-center py-4 text-muted">
+                                                <i class="fas fa-filter me-2"></i>No issues match the selected filters.
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- End Tab 3 -->
+
+    </div>
+
+    <div class="row mt-4 mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-start">
+                        <i class="fas fa-info-circle fa-lg text-primary me-3 mt-1"></i>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <h6 class="mb-1">About These Estimates</h6>
+                                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#estimateHelpModal">
+                                    <i class="fas fa-question-circle me-1"></i>How are these calculated?
+                                </button>
+                            </div>
+                            <p class="text-muted small mb-0">
+                                These estimates are generated based on industry-standard benchmarks for code remediation effort, 
+                                adjusted for the severity and complexity of each identified issue. Actual timelines may vary depending 
+                                on team familiarity with the codebase, testing requirements, and deployment constraints. Resource rates 
+                                can be customised using the Plan Settings panel above to reflect your organisation's specific costs. 
+                                The timeline supports parallel workstreams which can be configured to reduce the overall duration. 
+                                Additional overhead for QA testing, project management, and product ownership is included automatically.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estimate Calculation Help Modal -->
+    <div class="modal fade" id="estimateHelpModal" tabindex="-1" aria-labelledby="estimateHelpModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content bg-dark text-light">
+                <div class="modal-header border-bottom border-secondary">
+                    <h5 class="modal-title" id="estimateHelpModalLabel">
+                        <i class="fas fa-calculator me-2 text-primary"></i>How Estimates Are Calculated
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+
+                    <div class="mb-4">
+                        <h6 class="text-primary mb-2"><i class="fas fa-sitemap me-2"></i>1. How Issues Are Categorised</h6>
+                        <p class="small text-muted">Each code smell detected during analysis is automatically matched to one of 12 predefined categories based on keywords in its description. If no specific match is found, it falls into the <em>General Code Quality</em> category.</p>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="text-primary mb-2"><i class="fas fa-clock me-2"></i>2. Base Hour Estimates Per Category</h6>
+                        <p class="small text-muted mb-2">Each category has a base number of hours that represents the typical effort to fix one instance of that type of issue:</p>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-dark table-hover mb-0" style="font-size: 0.8rem;">
+                                <thead>
+                                    <tr>
+                                        <th>Category</th>
+                                        <th class="text-center">Base Hours</th>
+                                        <th>Assigned To</th>
+                                        <th>Risk Type</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for key, cat in calc_info.categories.items() %}
+                                    <tr>
+                                        <td>{{ key|replace('_', ' ')|title }}</td>
+                                        <td class="text-center">{{ cat.hours_per_instance }}h</td>
+                                        <td>{{ cat.resource_type }}</td>
+                                        <td>
+                                            <span class="badge 
+                                                {% if cat.risk_category == 'Security & Compliance Risk' %}bg-danger
+                                                {% elif cat.risk_category == 'Operational Risk' %}bg-warning text-dark
+                                                {% else %}bg-info{% endif %}" style="font-size: 0.65rem;">
+                                                {{ cat.risk_category }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                    <tr class="border-top">
+                                        <td><em>General Code Quality (default)</em></td>
+                                        <td class="text-center">{{ calc_info.default_category.hours_per_instance }}h</td>
+                                        <td>{{ calc_info.default_category.resource_type }}</td>
+                                        <td><span class="badge bg-info" style="font-size: 0.65rem;">Technical Debt</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="text-primary mb-2"><i class="fas fa-balance-scale me-2"></i>3. Severity Multipliers</h6>
+                        <p class="small text-muted mb-2">The base hours are then adjusted by a multiplier based on how severe the issue is:</p>
+                        <div class="row g-2">
+                            {% for level, mult in calc_info.severity_multipliers.items() %}
+                            <div class="col-md-4">
+                                <div class="card bg-transparent border border-secondary">
+                                    <div class="card-body text-center py-2">
+                                        <span class="badge bg-{{ 'danger' if level == 'High' else 'warning text-dark' if level == 'Medium' else 'info' }} mb-1">{{ level }}</span>
+                                        <h5 class="mb-0">&times; {{ mult }}</h5>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="alert alert-info border-0 shadow-sm mt-2 mb-0 py-2" style="background: rgba(13, 202, 240, 0.1); border-left: 4px solid #0dcaf0 !important;">
+                            <small class="text-light">
+                                <i class="fas fa-lightbulb text-info me-1"></i>
+                                <strong>Example:</strong> A "Security" issue (base {{ calc_info.categories.security.hours_per_instance }}h) rated as <span class="badge bg-danger" style="font-size: 0.65rem;">High</span> severity = {{ calc_info.categories.security.hours_per_instance }}h &times; {{ calc_info.severity_multipliers.High }} = <strong>{{ (calc_info.categories.security.hours_per_instance * calc_info.severity_multipliers.High)|round(1) }}h</strong>
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="text-primary mb-2"><i class="fas fa-users me-2"></i>4. Resource Types & Hourly Rates</h6>
+                        <p class="small text-muted mb-2">The cost is calculated by multiplying the estimated hours by the hourly rate of the resource assigned to that category:</p>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-dark table-hover mb-0" style="font-size: 0.8rem;">
+                                <thead>
+                                    <tr>
+                                        <th>Resource Type</th>
+                                        <th class="text-center">Hourly Rate</th>
+                                        <th>Typical Assignments</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for resource, rate in calc_info.resource_rates.items() %}
+                                    <tr>
+                                        <td>
+                                            {% if 'QA' in resource %}
+                                            <i class="fas fa-vial me-2 text-warning"></i>
+                                            {% elif 'Product Owner' in resource %}
+                                            <i class="fas fa-user-tie me-2 text-success"></i>
+                                            {% elif 'Project Manager' in resource %}
+                                            <i class="fas fa-tasks me-2 text-info"></i>
+                                            {% else %}
+                                            <i class="fas fa-user-cog me-2 text-primary"></i>
+                                            {% endif %}
+                                            {{ resource }}
+                                        </td>
+                                        <td class="text-center">{{ calc_info.currency_symbol }}{{ rate }}/hr</td>
+                                        <td class="small text-muted">
+                                            {% if 'Junior' in resource %}Naming, unused code, magic numbers
+                                            {% elif 'Mid' in resource %}Duplicated code, long methods, error handling, hardcoded values
+                                            {% elif 'Senior' in resource %}Large classes, security, tight coupling, performance
+                                            {% elif 'QA' in resource %}Test validation, regression testing, security verification
+                                            {% elif 'Product Owner' in resource %}Prioritisation, acceptance criteria, stakeholder sign-off
+                                            {% elif 'Project Manager' in resource %}Planning, coordination, status tracking, risk management
+                                            {% else %}General code quality tasks{% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <p class="small text-muted mt-2 mb-0"><i class="fas fa-info-circle me-1"></i>These rates are indicative benchmarks. Adjust them to match your organisation's actual costs.</p>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="text-primary mb-2"><i class="fas fa-layer-group me-2"></i>5. Additional Resource Allocation</h6>
+                        <p class="small text-muted mb-2">Beyond developer effort, the plan automatically includes overhead for quality assurance and management:</p>
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-4">
+                                <div class="card bg-dark border border-warning shadow-sm h-100">
+                                    <div class="card-body py-3 px-3">
+                                        <h6 class="text-warning mb-2"><i class="fas fa-vial me-2"></i>QA Testing</h6>
+                                        <p class="small text-muted mb-0"><strong>{{ (calc_info.qa_ratio * 100)|int }}%</strong> of total developer hours allocated for test validation, regression testing, and security verification.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-dark border border-info shadow-sm h-100">
+                                    <div class="card-body py-3 px-3">
+                                        <h6 class="text-info mb-2"><i class="fas fa-tasks me-2"></i>Project Manager</h6>
+                                        <p class="small text-muted mb-0"><strong>{{ (calc_info.pm_overhead_ratio * 100)|int }}%</strong> overhead for planning, coordination, status tracking, and risk management.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-dark border border-success shadow-sm h-100">
+                                    <div class="card-body py-3 px-3">
+                                        <h6 class="text-success mb-2"><i class="fas fa-user-tie me-2"></i>Product Owner</h6>
+                                        <p class="small text-muted mb-0"><strong>{{ (calc_info.po_overhead_ratio * 100)|int }}%</strong> overhead for prioritisation, acceptance criteria, and stakeholder sign-off.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="text-primary mb-2"><i class="fas fa-shield-alt me-2"></i>6. Risk Classification</h6>
+                        <p class="small text-muted mb-2">Every category is classified into one of three risk types to help prioritise work:</p>
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <div class="card bg-dark border border-danger shadow-sm h-100">
+                                    <div class="card-body py-3 px-3">
+                                        <h6 class="text-danger mb-2"><i class="fas fa-shield-alt me-2"></i>Security & Compliance</h6>
+                                        <p class="small text-muted mb-0">Issues that could lead to data breaches, regulatory penalties, or compliance failures. These are prioritised first.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-dark border border-warning shadow-sm h-100">
+                                    <div class="card-body py-3 px-3">
+                                        <h6 class="text-warning mb-2"><i class="fas fa-exclamation-triangle me-2"></i>Operational Risk</h6>
+                                        <p class="small text-muted mb-0">Issues that impact system stability, user experience, or production reliability. These are addressed second.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-dark border border-info shadow-sm h-100">
+                                    <div class="card-body py-3 px-3">
+                                        <h6 class="text-info mb-2"><i class="fas fa-wrench me-2"></i>Technical Debt</h6>
+                                        <p class="small text-muted mb-0">Issues that increase long-term maintenance costs and slow development velocity. These are planned for ongoing improvement.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="text-primary mb-2"><i class="fas fa-calendar-alt me-2"></i>7. Timeline & Gantt Chart</h6>
+                        <p class="small text-muted mb-2">The timeline is calculated as follows:</p>
+                        <ul class="small text-muted mb-2">
+                            <li>A working week is assumed to be <strong>{{ calc_info.hours_per_week }} hours</strong> of productive development time.</li>
+                            <li>Total hours for each category are divided by {{ calc_info.hours_per_week }}, then rounded up with a small buffer to avoid underestimation. The minimum is always 1 week.</li>
+                            <li>Categories are scheduled with higher-risk categories first (Security &amp; Compliance, then Operational Risk, then Technical Debt).</li>
+                            <li>Within each risk group, categories are ordered by the number of High-severity issues (most first), then by total estimated hours (highest first).</li>
+                            <li>The plan supports <strong>parallel workstreams</strong> (1&ndash;4), distributing tasks across multiple streams to reduce the overall timeline.</li>
+                        </ul>
+                        <div class="alert alert-info border-0 shadow-sm py-2 mb-0" style="background: rgba(13, 202, 240, 0.1); border-left: 4px solid #0dcaf0 !important;">
+                            <small class="text-light">
+                                <i class="fas fa-lightbulb text-info me-1"></i>
+                                <strong>Note:</strong> Use the Plan Settings panel to configure parallel workstreams. With multiple streams, tasks are distributed to the earliest available stream, reducing total project duration.
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="text-primary mb-2"><i class="fas fa-money-bill-wave me-2"></i>8. Total Cost Formula</h6>
+                        <p class="small text-muted mb-2">The total cost is the sum across all issues:</p>
+                        <div class="card bg-transparent border border-secondary">
+                            <div class="card-body py-3 text-center">
+                                <code class="text-light" style="font-size: 0.9rem;">
+                                    Total Cost = &sum; (Base Hours &times; Severity Multiplier &times; Hourly Rate)
+                                </code>
+                                <p class="small text-muted mt-2 mb-0">For each issue, across all categories</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-0">
+                        <h6 class="text-primary mb-2"><i class="fas fa-shield-alt me-2"></i>9. Contingency Buffer</h6>
+                        <p class="small text-muted mb-2">An optional contingency buffer can be applied to account for unknowns, estimation inaccuracies, and unforeseen complexity. Real-world projects typically include 15-25% contingency.</p>
+                        <ul class="small text-muted mb-2">
+                            <li>Configurable from <strong>0% to 50%</strong> via the Plan Settings panel (default: 0%).</li>
+                            <li>Applied as a percentage of the base total hours and cost <strong>after</strong> all resource allocations (developers, QA, PM, PO) are calculated.</li>
+                            <li>Displayed separately in the Resource Requirements table so stakeholders can see the base estimate vs. the buffer.</li>
+                        </ul>
+                        <div class="alert alert-info border-0 shadow-sm py-2 mb-0" style="background: rgba(13, 202, 240, 0.1); border-left: 4px solid #0dcaf0 !important;">
+                            <small class="text-light">
+                                <i class="fas fa-lightbulb text-info me-1"></i>
+                                <strong>Example:</strong> A base estimate of 100h at {{ calc_info.currency_symbol }}10,000 with a 20% contingency buffer = <strong>120h</strong> and <strong>{{ calc_info.currency_symbol }}12,000</strong> total.
+                            </small>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer border-top border-secondary">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.gantt-bar-purple {
+    background: linear-gradient(135deg, #7c3aed, #a855f7) !important;
+}
+.bg-purple {
+    background-color: #7c3aed !important;
+    color: #fff;
+}
+.gantt-bar-contingency {
+    background: repeating-linear-gradient(
+        135deg,
+        #f59e0b,
+        #f59e0b 8px,
+        #d97706 8px,
+        #d97706 16px
+    ) !important;
+    opacity: 0.85;
+}
+.bg-contingency {
+    background-color: #f59e0b !important;
+    color: #000;
+}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    // ── Settings Form ──
+    var settingsForm = document.getElementById('settingsForm');
+    if (settingsForm) {
+        settingsForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var params = new URLSearchParams();
+            var inputs = settingsForm.querySelectorAll('input[name], select[name]');
+            inputs.forEach(function(input) {
+                if (input.value) {
+                    params.set(input.name, input.value);
+                }
+            });
+            var baseUrl = window.location.pathname;
+            window.location.href = baseUrl + '?' + params.toString();
+        });
+    }
+
+    // ── Tab 2: Collapsible cards ──
+    var toggleBtn = document.getElementById('toggleAllCards');
+    if (toggleBtn) {
+        document.querySelectorAll('.remediation-collapsible-card .collapse').forEach(function(el) {
+            el.addEventListener('shown.bs.collapse', function() {
+                this.closest('.remediation-collapsible-card').querySelector('.collapse-indicator').style.transform = 'rotate(90deg)';
+            });
+            el.addEventListener('hidden.bs.collapse', function() {
+                this.closest('.remediation-collapsible-card').querySelector('.collapse-indicator').style.transform = 'rotate(0deg)';
+            });
+        });
+
+        toggleBtn.addEventListener('click', function() {
+            var isExpanded = this.getAttribute('data-expanded') === 'true';
+            var collapseEls = document.querySelectorAll('.remediation-collapsible-card .collapse');
+
+            collapseEls.forEach(function(el) {
+                var bsCollapse = bootstrap.Collapse.getOrCreateInstance(el, { toggle: false });
+                if (isExpanded) {
+                    bsCollapse.hide();
+                } else {
+                    bsCollapse.show();
+                }
+            });
+
+            if (isExpanded) {
+                this.setAttribute('data-expanded', 'false');
+                this.innerHTML = '<i class="fas fa-expand-alt me-1"></i><span>Expand All</span>';
+            } else {
+                this.setAttribute('data-expanded', 'true');
+                this.innerHTML = '<i class="fas fa-compress-alt me-1"></i><span>Collapse All</span>';
+            }
+        });
+    }
+
+    // ── Tab 3: Filtering ──
+    var severityFilter = document.getElementById('severityFilterSelect');
+    var categoryFilter = document.getElementById('categoryFilterSelect');
+    var textSearch = document.getElementById('textSearchInput');
+    var noResultsRow = document.getElementById('noFilterResults');
+    var issueCounter = document.getElementById('issueCounter');
+    var totalIssues = document.querySelectorAll('.file-detail-row').length;
+
+    function filterTable() {
+        if (!severityFilter || !categoryFilter) return;
+        var severity = severityFilter.value;
+        var category = categoryFilter.value;
+        var search = textSearch ? textSearch.value.toLowerCase().trim() : '';
+        var rows = document.querySelectorAll('.file-detail-row');
+        var visibleCount = 0;
+
+        rows.forEach(function(row) {
+            var matchSeverity = !severity || row.getAttribute('data-severity') === severity;
+            var matchCategory = !category || row.getAttribute('data-category') === category;
+            var matchSearch = !search ||
+                row.getAttribute('data-file').indexOf(search) !== -1 ||
+                row.getAttribute('data-description').indexOf(search) !== -1;
+            var show = matchSeverity && matchCategory && matchSearch;
+            row.style.display = show ? '' : 'none';
+            if (show) visibleCount++;
+        });
+
+        if (noResultsRow) {
+            noResultsRow.style.display = visibleCount === 0 ? '' : 'none';
+        }
+        if (issueCounter) {
+            issueCounter.textContent = 'Displaying ' + visibleCount + ' of ' + totalIssues + ' issues';
+        }
+    }
+
+    if (severityFilter) severityFilter.addEventListener('change', filterTable);
+    if (categoryFilter) categoryFilter.addEventListener('change', filterTable);
+    if (textSearch) textSearch.addEventListener('input', filterTable);
+
+    // ── Tab 3: Sortable columns ──
+    var sortState = { column: null, direction: 'asc' };
+    var severityOrder = { 'High': 0, 'Medium': 1, 'Low': 2 };
+
+    document.querySelectorAll('.sortable-header').forEach(function(header) {
+        header.style.cursor = 'pointer';
+        header.style.userSelect = 'none';
+
+        header.addEventListener('click', function() {
+            var col = this.getAttribute('data-sort');
+            if (sortState.column === col) {
+                sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortState.column = col;
+                sortState.direction = 'asc';
+            }
+
+            document.querySelectorAll('.sortable-header .sort-icon').forEach(function(icon) {
+                icon.className = 'fas fa-sort ms-1 text-muted sort-icon';
+            });
+            var activeIcon = this.querySelector('.sort-icon');
+            activeIcon.className = 'fas fa-sort-' + (sortState.direction === 'asc' ? 'up' : 'down') + ' ms-1 text-primary sort-icon';
+
+            var tbody = document.getElementById('fileDetailBody');
+            var rows = Array.from(tbody.querySelectorAll('.file-detail-row'));
+
+            rows.sort(function(a, b) {
+                var valA, valB;
+
+                if (col === 'file') {
+                    valA = a.getAttribute('data-file');
+                    valB = b.getAttribute('data-file');
+                    return sortState.direction === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                } else if (col === 'category') {
+                    valA = a.getAttribute('data-category').toLowerCase();
+                    valB = b.getAttribute('data-category').toLowerCase();
+                    return sortState.direction === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                } else if (col === 'severity') {
+                    valA = severityOrder[a.getAttribute('data-severity')] || 3;
+                    valB = severityOrder[b.getAttribute('data-severity')] || 3;
+                    return sortState.direction === 'asc' ? valA - valB : valB - valA;
+                } else if (col === 'hours') {
+                    valA = parseFloat(a.getAttribute('data-hours')) || 0;
+                    valB = parseFloat(b.getAttribute('data-hours')) || 0;
+                    return sortState.direction === 'asc' ? valA - valB : valB - valA;
+                }
+                return 0;
+            });
+
+            var noResults = document.getElementById('noFilterResults');
+            rows.forEach(function(row) {
+                tbody.appendChild(row);
+            });
+            if (noResults) tbody.appendChild(noResults);
+        });
+    });
+});
+</script>
+{% endblock %}

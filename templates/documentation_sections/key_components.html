@@ -1,0 +1,118 @@
+<!-- Key Components Section -->
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <h5>Core Modules</h5>
+        <div class="list-group list-group-flush">
+            {% for module in section_data.content.core_modules %}
+                <div class="list-group-item bg-transparent border-0 px-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong><i class="fas fa-file-code me-2"></i>{{ module.name }}</strong>
+                            <br><small class="text-muted">{{ module.functions }} functions, {{ module.classes }} classes</small>
+                        </div>
+                        <span class="badge {% if module.importance == 'High' %}bg-danger{% else %}bg-warning{% endif %}">
+                            {{ module.importance }}
+                        </span>
+                    </div>
+                </div>
+            {% else %}
+                <div class="list-group-item bg-transparent border-0 px-0">
+                    <span class="text-muted">No core modules identified</span>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <h5>Main Classes</h5>
+        <div class="list-group list-group-flush">
+            {% for class in section_data.content.main_classes %}
+                <div class="list-group-item bg-transparent border-0 px-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong><i class="fas fa-cube me-2"></i>{{ class.name }}</strong>
+                            <br><small class="text-muted">{{ class.methods }} methods, {{ class.properties }} properties</small>
+                        </div>
+                        <small class="text-muted">{{ class.file }}</small>
+                    </div>
+                </div>
+            {% else %}
+                <div class="list-group-item bg-transparent border-0 px-0">
+                    <span class="text-muted">No classes found</span>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <h5>Critical Functions</h5>
+        <div class="list-group list-group-flush">
+            {% for function in section_data.content.critical_functions %}
+                <div class="list-group-item bg-transparent border-0 px-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong><i class="fas fa-function me-2 {% if function.critical %}text-danger{% endif %}"></i>{{ function.name }}</strong>
+                            <br><small class="text-muted">{{ function.parameters }} parameters in {{ function.file }}</small>
+                        </div>
+                        {% if function.critical %}
+                            <span class="badge bg-danger">Critical</span>
+                        {% endif %}
+                    </div>
+                </div>
+            {% else %}
+                <div class="list-group-item bg-transparent border-0 px-0">
+                    <span class="text-muted">No functions found</span>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <h5>Entry Points</h5>
+        <div class="list-group list-group-flush">
+            {% for entry_point in section_data.content.entry_points %}
+                <div class="list-group-item bg-transparent border-0 px-0">
+                    <i class="fas fa-play me-2 text-success"></i>{{ entry_point }}
+                </div>
+            {% else %}
+                <div class="list-group-item bg-transparent border-0 px-0">
+                    <span class="text-muted">No entry points identified</span>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <h5>Configuration Files</h5>
+        <div class="list-group list-group-flush">
+            {% for config_file in section_data.content.configuration_files %}
+                <div class="list-group-item bg-transparent border-0 px-0">
+                    <i class="fas fa-cog me-2 text-info"></i>{{ config_file }}
+                </div>
+            {% else %}
+                <div class="list-group-item bg-transparent border-0 px-0">
+                    <span class="text-muted">No configuration files found</span>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <h5>Utility Modules</h5>
+        <div class="list-group list-group-flush">
+            {% for utility in section_data.content.utility_modules %}
+                <div class="list-group-item bg-transparent border-0 px-0">
+                    <i class="fas fa-tools me-2 text-secondary"></i>{{ utility }}
+                </div>
+            {% else %}
+                <div class="list-group-item bg-transparent border-0 px-0">
+                    <span class="text-muted">No utility modules found</span>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>

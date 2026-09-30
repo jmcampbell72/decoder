@@ -1,0 +1,94 @@
+<!-- Hardcoded Values Analysis Section -->
+{% if section_data.content.hardcoded_values %}
+<div class="alert alert-info mb-4">
+    <h6><i class="fas fa-code me-2"></i>Hardcoded Values Detected</h6>
+    <p class="mb-0 text-light">{{ section_data.content.hardcoded_values|length }} hardcoded values found. Consider moving these to configuration files.</p>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h5>Risk Assessment</h5>
+        {% for risk_level, items in section_data.content.risk_assessment.items() %}
+        <div class="card bg-{% if risk_level == 'High' %}danger{% elif risk_level == 'Medium' %}warning{% else %}success{% endif %} bg-opacity-10 border-{% if risk_level == 'High' %}danger{% elif risk_level == 'Medium' %}warning{% else %}success{% endif %} border-opacity-25 mb-2">
+            <div class="card-body">
+                <h6 class="card-title text-{% if risk_level == 'High' %}danger{% elif risk_level == 'Medium' %}warning{% else %}success{% endif %}">
+                    {{ risk_level }} Risk ({{ items|length }})
+                </h6>
+                {% for item in items[:3] %}
+                    <p class="small mb-1">{{ item }}</p>
+                {% endfor %}
+                {% if items|length > 3 %}
+                    <p class="small text-muted mb-0">... and {{ items|length - 3 }} more</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="col-md-6">
+        <h5>Categories</h5>
+        <div class="list-group list-group-flush">
+            {% for category, count in section_data.content.categories.items() %}
+                <div class="list-group-item bg-transparent border-0 px-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-tag me-2"></i>{{ category }}</span>
+                        <span class="badge bg-secondary">{{ count }}</span>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h5>Hardcoded Values Details</h5>
+        <div class="table-responsive">
+            <table class="table table-dark table-hover">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Value</th>
+                        <th>File</th>
+                        <th>Line</th>
+                        <th>Risk Level</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for value in section_data.content.hardcoded_values[:10] %}
+                    <tr>
+                        <td><span class="badge bg-info">{{ value.type }}</span></td>
+                        <td><code class="small">{{ value.value }}</code></td>
+                        <td>{{ value.file }}</td>
+                        <td>{{ value.line }}</td>
+                        <td>
+                            <span class="badge {% if value.risk_level == 'High' %}bg-danger{% else %}bg-warning{% endif %}">
+                                {{ value.risk_level }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-success mb-4">
+    <h6><i class="fas fa-check-circle me-2"></i>No Hardcoded Values Detected</h6>
+    <p class="mb-0">No obvious hardcoded values found in the static analysis.</p>
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-12">
+        <h5>Remediation Suggestions</h5>
+        <div class="list-group list-group-flush">
+            {% for suggestion in section_data.content.remediation_suggestions %}
+                <div class="list-group-item bg-transparent border-0 px-0">
+                    <i class="fas fa-arrow-right me-2 text-success"></i>{{ suggestion }}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>

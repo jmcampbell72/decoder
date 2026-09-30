@@ -1,0 +1,110 @@
+<div class="modal fade" id="onboardingModal" tabindex="-1" aria-labelledby="onboardingModalLabel" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow-lg" style="background: var(--custom-dark, #0a0a0a); border-radius: 1.25rem; overflow: hidden;">
+      
+      <div class="position-relative text-center pt-5 pb-4 px-4" style="background: linear-gradient(135deg, rgba(184,40,40,0.15) 0%, rgba(10,10,10,0.9) 60%);">
+        <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="mb-3">
+          <div class="d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 72px; height: 72px; background: var(--primary-gradient, linear-gradient(135deg, #B82828, #8a1f1f));">
+            <i class="fas fa-code fa-2x text-white"></i>
+          </div>
+        </div>
+        <h2 class="fw-bold mb-2" style="color: var(--custom-white, #fefefe); font-size: 1.75rem;">Welcome to DeCoder</h2>
+        <p class="mb-0" style="color: rgba(254,254,254,0.7); max-width: 480px; margin: 0 auto; font-size: 1.05rem;">
+          Analyse your codebase with AI to generate interactive mind maps, documentation, and quality insights.
+        </p>
+        <p class="mb-0 mt-3" style="max-width: 480px; margin: 0 auto;">
+          <span class="badge rounded-pill px-3 py-2" style="background: rgba(184,40,40,0.2); color: var(--custom-red-light, #d93636); font-size: 0.9rem; font-weight: 600; letter-spacing: 0.3px;">
+            <i class="fas fa-shield-alt me-1"></i>In memory analysis &mdash; no storage of code
+          </span>
+        </p>
+      </div>
+
+      <div class="modal-body px-4 px-md-5 pt-4 pb-2">
+        <p class="text-center mb-4" style="color: rgba(254,254,254,0.55); font-size: 0.95rem;">
+          Choose how you'd like to get started:
+        </p>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <a href="{{ url_for('main.start_demo_analysis') }}" class="text-decoration-none d-block h-100">
+              <div class="card border-0 h-100 onboarding-card" style="background: var(--custom-gray, #1a1a1a); border-radius: 1rem; transition: all 0.25s ease;">
+                <div class="card-body text-center p-4">
+                  <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3" style="width: 56px; height: 56px; background: rgba(184,40,40,0.15);">
+                    <i class="fas fa-play fa-lg" style="color: var(--custom-red, #B82828);"></i>
+                  </div>
+                  <h5 class="fw-semibold mb-2" style="color: var(--custom-white, #fefefe);">Try a Demo</h5>
+                  <p class="mb-3" style="color: rgba(254,254,254,0.55); font-size: 0.9rem; line-height: 1.5;">
+                    Run a quick analysis on our sample Task Manager project. See mind maps, docs, and insights in action.
+                  </p>
+                  <span class="badge rounded-pill px-3 py-2" style="background: rgba(184,40,40,0.2); color: var(--custom-red-light, #d93636); font-size: 0.8rem;">
+                    <i class="fas fa-bolt me-1"></i>Takes ~1 minute
+                  </span>
+                </div>
+              </div>
+            </a>
+          </div>
+
+          <div class="col-md-6">
+            <a href="{{ url_for('main.upload_form') }}" class="text-decoration-none d-block h-100">
+              <div class="card border-0 h-100 onboarding-card" style="background: var(--custom-gray, #1a1a1a); border-radius: 1rem; transition: all 0.25s ease;">
+                <div class="card-body text-center p-4">
+                  <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3" style="width: 56px; height: 56px; background: rgba(184,40,40,0.15);">
+                    <i class="fas fa-upload fa-lg" style="color: var(--custom-red, #B82828);"></i>
+                  </div>
+                  <h5 class="fw-semibold mb-2" style="color: var(--custom-white, #fefefe);">Analyse Your Code</h5>
+                  <p class="mb-3" style="color: rgba(254,254,254,0.55); font-size: 0.9rem; line-height: 1.5;">
+                    Upload your own files or import from GitHub. Supports Python, JavaScript, C/C++, Rust, Kotlin &amp; Swift.
+                  </p>
+                  <span class="badge rounded-pill px-3 py-2" style="background: rgba(184,40,40,0.2); color: var(--custom-red-light, #d93636); font-size: 0.8rem;">
+                    <i class="fab fa-github me-1"></i>Upload or GitHub
+                  </span>
+                </div>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <div class="text-center mb-3">
+          <div class="d-inline-flex align-items-start gap-3 px-4 py-3 rounded-3" style="background: rgba(184,40,40,0.08); max-width: 420px;">
+            <i class="fas fa-lightbulb mt-1" style="color: var(--custom-red, #B82828); font-size: 0.95rem;"></i>
+            <p class="mb-0" style="color: rgba(254,254,254,0.5); font-size: 0.85rem; text-align: left; line-height: 1.5;">
+              DeCoder uses AI to map your code structure, identify patterns, and generate comprehensive documentation automatically.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer border-0 px-4 px-md-5 pb-4 pt-0 d-flex justify-content-between align-items-center">
+        <form action="{{ url_for('main.dismiss_onboarding') }}" method="POST" class="d-inline">
+          <div class="form-check">
+            <input type="hidden" name="hide_onboarding" value="0">
+            <input class="form-check-input" type="checkbox" id="hideOnboarding" name="hide_onboarding" value="1" onchange="this.form.submit()" style="border-color: rgba(254,254,254,0.3);">
+            <label class="form-check-label" for="hideOnboarding" style="color: rgba(254,254,254,0.45); font-size: 0.85rem; cursor: pointer;">
+              Don't show this again
+            </label>
+          </div>
+        </form>
+        <button type="button" class="btn btn-sm px-3" data-bs-dismiss="modal" style="color: rgba(254,254,254,0.5); font-size: 0.85rem;">
+          Skip for now
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<style>
+  .onboarding-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4) !important;
+    background: var(--custom-gray-light, #2a2a2a) !important;
+  }
+  #onboardingModal .modal-content {
+    border: 1px solid rgba(254,254,254,0.08);
+  }
+  #onboardingModal .form-check-input:checked {
+    background-color: var(--custom-red, #B82828);
+    border-color: var(--custom-red, #B82828);
+  }
+</style>

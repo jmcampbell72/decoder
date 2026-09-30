@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ brand.name }}{% endblock %}</title>
+
+    {% if brand.favicon %}
+    <!-- Brand favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename=brand.favicon) }}">
+    {% endif %}
+    
+    <!-- Bootstrap CSS -->
+    <link href="bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    
+    <!-- Brand-specific CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename=brand.css) }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mindmap.css') }}">
+    
+    <!-- Mermaid.js for diagrams -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="{{ url_for('main.index') }}">
+                <img src="{{ url_for('static', filename=brand.logo) }}" alt="{{ brand.name }}" height="32" class="me-2">
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    {% if current_user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('main.dashboard') }}">
+                                <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('main.upload_form') }}">
+                                <i class="fas fa-upload me-1"></i>Upload Code
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link chat-nav-btn" href="#" data-bs-toggle="modal" data-bs-target="#chatModal">
+                                <i class="fas fa-comments me-1"></i>Chat
+                            </a>
+                        </li>
+                        {% if current_user.is_admin() %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('main.admin_panel') }}">
+                                    <i class="fas fa-cog me-1"></i>Admin
+                                </a>
+                            </li>
+                        {% endif %}
+                        {% if current_user.is_company_admin and team_access %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('team.admin') }}">
+                                    <i class="fas fa-users-cog me-1"></i>Team Admin
+                                </a>
+                            </li>
+                        {% endif %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('main.systems_list') }}">
+                                <i class="fas fa-layer-group me-1"></i>Systems
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('main.help_page') }}">
+                                <i class="fas fa-life-ring me-1"></i>Help
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+                
+                <ul class="navbar-nav">
+                    {% if current_user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user me-1"></i>{{ current_user.username }}
+                                {% if current_user.is_admin() %}
+                                    <span class="badge bg-danger ms-1">Platform Admin</span>
+                                {% elif current_user.is_company_admin %}
+                                    <span class="badge bg-primary ms-1">Team Admin</span>
+                                {% endif %}
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">
+                                    <i class="fas fa-user-circle me-2"></i>Profile
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('auth.reset_password') }}">
+                                    <i class="fas fa-key me-2"></i>Reset Password
+                                </a></li>
+                                {% if current_user.company and current_user.company.subscription_status == 'active' %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ wix_portal_url }}" target="_blank" rel="noopener">
+                                    <i class="fas fa-credit-card me-2"></i>Manage Subscription
+                                </a></li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                </a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('auth.login') }}">
+                                <i class="fas fa-sign-in-alt me-1"></i>Login
+                            </a>
+                        </li>
+                        <!-- <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('auth.register') }}">
+                                <i class="fas fa-user-plus me-1"></i>Register
+                            </a>
+                        </li> -->
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container mt-3">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'info-circle' if category == 'info' else 'check-circle' }} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main class="flex-grow-1">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer mt-auto py-3">
+        <div class="container text-center">
+            <span class="text-muted">
+                <i class="fas fa-code me-1"></i>© {{ brand.footer_text }}
+            </span>
+        </div>
+    </footer>
+
+    <!-- Chat Modal -->
+    {% if current_user.is_authenticated %}
+    <div class="modal fade" id="chatModal" tabindex="-1" aria-labelledby="chatModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content chat-modal-content">
+
+                <!-- Header -->
+                <div class="modal-header chat-modal-header">
+                    <h5 class="modal-title" id="chatModalLabel">
+                        <i class="fas fa-comments me-2"></i>Chat with your Analysis
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body p-0">
+                    <div class="chat-layout">
+
+                        <!-- Sidebar: Analysis selector -->
+                        <div class="chat-sidebar">
+                            <div class="chat-sidebar-header">
+                                <i class="fas fa-layer-group me-1"></i>Select Analyses
+                            </div>
+                            <div id="chatAnalysisList" class="chat-analysis-list">
+                                <div class="chat-sidebar-loading">
+                                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                                    Loading…
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Main chat area -->
+                        <div class="chat-main">
+
+                            <!-- Preconfigured prompt chips -->
+                            <div class="chat-prompts">
+                                <span class="chat-prompts-label">Quick questions:</span>
+                                <div class="chat-prompt-chips">
+                                    <button class="prompt-chip" data-prompt="Summarise the architecture of this codebase.">Summarise the architecture</button>
+                                    <button class="prompt-chip" data-prompt="What are the main security issues found?">Main security issues</button>
+                                    <button class="prompt-chip" data-prompt="What are the top code smells and why do they matter?">Top code smells</button>
+                                    <button class="prompt-chip" data-prompt="How maintainable is this codebase overall?">Maintainability</button>
+                                    <button class="prompt-chip" data-prompt="What should I fix first to get the most impact?">What to fix first</button>
+                                    <button class="prompt-chip" data-prompt="Estimate the technical debt and remediation effort.">Estimate technical debt</button>
+                                </div>
+                            </div>
+
+                            <!-- Message thread -->
+                            <div id="chatMessages" class="chat-messages">
+                                <div class="chat-welcome">
+                                    <i class="fas fa-robot fa-2x mb-2 d-block"></i>
+                                    Select one or more analyses on the left, then ask a question below or choose a quick prompt above.
+                                </div>
+                            </div>
+
+                            <!-- Inline warning -->
+                            <div id="chatWarning" class="chat-warning d-none">
+                                <i class="fas fa-exclamation-triangle me-1"></i>Please select at least one analysis result first.
+                            </div>
+
+                            <!-- Input area -->
+                            <div class="chat-input-area">
+                                <textarea id="chatInput" class="chat-input" rows="2" placeholder="Ask a question about the selected analysis…"></textarea>
+                                <button id="chatClearBtn" class="chat-clear-btn" title="Clear conversation">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                                <button id="chatSendBtn" class="chat-send-btn">
+                                    <span id="chatSendLabel"><i class="fas fa-paper-plane"></i></span>
+                                    <span id="chatSendSpinner" class="d-none">
+                                        <span class="spinner-border spinner-border-sm" role="status"></span>
+                                    </span>
+                                </button>
+                            </div>
+
+                        </div><!-- /.chat-main -->
+                    </div><!-- /.chat-layout -->
+                </div><!-- /.modal-body -->
+
+            </div><!-- /.modal-content -->
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+
+    {% if current_user.is_authenticated %}
+    <!-- Chat JS -->
+    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+    {% endif %}
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

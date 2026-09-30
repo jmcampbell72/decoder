@@ -1,0 +1,94 @@
+<!-- Security Analysis Section -->
+{% if section_data.content.security_issues %}
+<div class="alert alert-warning mb-4">
+    <h6><i class="fas fa-exclamation-triangle me-2"></i>Security Issues Found</h6>
+    <p class="mb-0">{{ section_data.content.security_issues|length }} potential security issues detected. Review and address them promptly.</p>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h5>Security Issues by Type</h5>
+        <div class="table-responsive">
+            <table class="table table-dark table-hover">
+                <thead>
+                    <tr>
+                        <th>Issue Type</th>
+                        <th>File</th>
+                        <th>Line</th>
+                        <th>Severity</th>
+                        <th>Context</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for issue in section_data.content.security_issues %}
+                    <tr>
+                        <td><span class="badge bg-warning">{{ issue.type }}</span></td>
+                        <td>{{ issue.file }}</td>
+                        <td>{{ issue.line }}</td>
+                        <td>
+                            <span class="badge {% if issue.severity == 'High' %}bg-danger{% else %}bg-warning{% endif %}">
+                                {{ issue.severity }}
+                            </span>
+                        </td>
+                        <td><code class="small">{{ issue.context[:50] }}...</code></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-success mb-4">
+    <h6><i class="fas fa-shield-alt me-2"></i>No Security Issues Detected</h6>
+    <p class="mb-0 text-light">No obvious security vulnerabilities found in the static analysis.</p>
+</div>
+{% endif %}
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h5>Security Recommendations</h5>
+        <div class="list-group list-group-flush">
+            {% for recommendation in section_data.content.security_recommendations %}
+                <div class="list-group-item bg-transparent border-0 px-0">
+                    <i class="fas fa-lightbulb me-2 text-warning"></i>{{ recommendation }}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <h5>Sensitive Data Handling</h5>
+        <div class="list-group list-group-flush">
+            {% for pattern in section_data.content.sensitive_data_handling %}
+                <div class="list-group-item bg-transparent border-0 px-0">
+                    <i class="fas fa-eye me-2 text-info"></i>{{ pattern }}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <h5>Authentication Patterns</h5>
+        <div class="list-group list-group-flush">
+            {% for pattern in section_data.content.authentication_patterns %}
+                <div class="list-group-item bg-transparent border-0 px-0">
+                    <i class="fas fa-key me-2 text-success"></i>{{ pattern }}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <h5>Encryption Usage</h5>
+        <div class="list-group list-group-flush">
+            {% for usage in section_data.content.encryption_usage %}
+                <div class="list-group-item bg-transparent border-0 px-0">
+                    <i class="fas fa-lock me-2 text-primary"></i>{{ usage }}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
