@@ -396,29 +396,18 @@ SQLALCHEMY_ENGINE_OPTIONS = {
 MAX_CONTENT_LENGTH = 110 * 1024 * 1024  # 110MB
 
 ```
----
-
-## 📚 Documentation
-
-Additional documentation available in:
-
-- `decoder_social_media_features.md` — Feature reference and marketing copy
-- `templates/help.html` — In-app help documentation
-- Generated analysis docs — Dynamic documentation created from your code
-
----
-
 
 ## 📞 Support & Contact
 
 For issues, feature requests, or questions:
-- Visit: https://www.decoderco.com
+- Raise an Issue on GitHub
 
 ---
 
 ## 🗺️ Roadmap
 
 Potential future enhancements:
+- [ ] Docker Container
 - [ ] Real-time collaboration on analyses
 - [ ] Custom AI model fine-tuning
 - [ ] VS Code extension
